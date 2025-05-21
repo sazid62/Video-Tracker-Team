@@ -21,6 +21,7 @@ function Video({
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
+      
     });
   };
 
