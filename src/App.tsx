@@ -1,21 +1,11 @@
 import "./App.css";
-<<<<<<< HEAD
-import VideoPlayer from "./components/VideoPlayer";
+import Video from "./components/Video";
+import VideoPlayer from "./components/Video";
 
 function App() {
   return <>
-    <VideoPlayer/>
+    <Video/>
   </>;
-=======
-import Video from "./components/Video";
-
-function App() {
-  return (
-    <>
-      <Video />
-    </>
-  );
->>>>>>> main
 }
 
 export default App;
