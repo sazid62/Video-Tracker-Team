@@ -1,12 +1,15 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 
-function Video(video_id: 12) {
+function Video() {
+  const video_id=12;
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const videoSrc = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
+
+
   const myInfoInitialize = (): {
     array: [];
     video_id: number;
@@ -21,6 +24,9 @@ function Video(video_id: 12) {
       }
     );
   };
+
+  console.log(myInfoInitialize(),"test")
+
   const myInfo = useRef<{ array: []; video_id: number }>(myInfoInitialize());
 
   useEffect(() => {
@@ -46,12 +52,28 @@ function Video(video_id: 12) {
     };
   }, []);
 
+  const setDataToLocalStorageFromAddSegment=()=>{
+    const previousPushedData=JSON.parse(localStorage.getItem("video-editor")||"[]");
+    
+    const index=previousPushedData.findIndex((item:any)=>item.video_id===video_id);
+    if(index!==-1){
+      previousPushedData[index]=myInfo.current
+    }
+    else{
+      previousPushedData.push(myInfo.current)
+    }
+    
+    localStorage.setItem("video-editor",JSON.stringify(previousPushedData));
+
+  }
+  
   const addSegment = (segment: { start: number; end: number }) => {
     if (segment.start > segment.end) {
       return;
     }
     console.log("Adding Segment: ", segment);
     myInfo.current = {
+
       ...myInfo.current,
       array: [
         ...myInfo.current.array,
@@ -61,6 +83,12 @@ function Video(video_id: 12) {
         },
       ],
     };
+    console.log(myInfo.current)
+
+    setDataToLocalStorageFromAddSegment();
+
+
+    
   };
 
   const getCurrentTime = (): number => {
