@@ -1,24 +1,27 @@
-import React, { useEffect, useRef } from "react";
-import Hls from "hls.js";
+import React, { useRef } from "react";
+
 import Heatmap from "./Heatmap";
 interface videoProps {
   video_id?: number;
+  video_src?: string;
 }
-function Video({ video_id = 12 }: videoProps) {
+function Video({
+  video_id = 12,
+  video_src = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+}: videoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
-  const videoSrc = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
 
-  const handleBeforeUnload=()=>{
+  const handleBeforeUnload = () => {
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
     });
-  }
+  };
 
-  window.onbeforeunload=handleBeforeUnload;
+  window.onbeforeunload = handleBeforeUnload;
 
   const myInfoInitialize = (): {
     array: [];
@@ -38,29 +41,6 @@ function Video({ video_id = 12 }: videoProps) {
   console.log(myInfoInitialize(), "test");
 
   const myInfo = useRef<{ array: []; video_id: number }>(myInfoInitialize());
-
-  useEffect(() => {
-    if (videoRef.current) {
-      if (Hls.isSupported()) {
-        hlsRef.current = new Hls();
-        hlsRef.current.loadSource(videoSrc);
-        hlsRef.current.attachMedia(videoRef.current);
-        hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log("HLS manifest loaded");
-          videoRef.current
-            ?.play()
-            .catch((e) => console.log("Autoplay prevented:", e));
-        });
-      }
-    }
-
-    // Cleanup function
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-      }
-    };
-  }, []);
 
   const setDataToLocalStorageFromAddSegment = () => {
     const previousPushedData = JSON.parse(
@@ -145,17 +125,18 @@ function Video({ video_id = 12 }: videoProps) {
       end: lastWatched.current,
     });
 
-
     startWatched.current = getCurrentTime() + 1;
   };
 
   const handleSeeking = () => {
     console.log("Before seekd user at:  ", lastWatched.current);
 
-    addSegment({
-      start: startWatched.current,
-      end: lastWatched.current,
-    });
+    if (getCurrentTime() > lastWatched.current) {
+      addSegment({
+        start: startWatched.current,
+        end: lastWatched.current,
+      });
+    }
 
     startWatched.current = getCurrentTime();
 
@@ -164,6 +145,8 @@ function Video({ video_id = 12 }: videoProps) {
 
   const handleSeeked = () => {
     console.log("Seeked to time:", getCurrentTime());
+    startWatched.current = getCurrentTime() + 1;
+    lastWatched.current = getCurrentTime() + 1;
   };
 
   const handleEnded = () => {
@@ -177,17 +160,20 @@ function Video({ video_id = 12 }: videoProps) {
   const handleTimeUpdate = () => {
     if (!videoRef.current?.seeking) {
       lastWatched.current = getCurrentTime();
-      if(lastWatched.current-startWatched.current>=5){
+      if (lastWatched.current - startWatched.current >= 5) {
         addSegment({
           start: startWatched.current,
           end: lastWatched.current,
         });
-        startWatched.current=getCurrentTime()+1;
+        startWatched.current = getCurrentTime() + 1;
       }
     }
+
+    setHeatMapArray(generateHeatmap());
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
   const handleLoadedData = () => {
+    console.log(videoRef.current?.duration);
     setHeatMapArray(generateHeatmap());
   };
 
@@ -201,9 +187,10 @@ function Video({ video_id = 12 }: videoProps) {
   return (
     <div>
       <video
+        className="mb-4"
         ref={videoRef}
+        src={video_src}
         controls
-        width="500"
         onPlay={handlePlay}
         onLoadedData={handleLoadedData}
         onPause={handlePause}

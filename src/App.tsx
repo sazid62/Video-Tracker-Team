@@ -5,8 +5,12 @@ import Video from "./components/Video";
 function App() {
   return (
     <>
-      <Video video_id={12} />
-      <Video video_id={15} />
+      <Video
+        video_id={15}
+        video_src={
+          "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        }
+      />
     </>
   );
 }
