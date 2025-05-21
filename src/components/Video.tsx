@@ -1,14 +1,15 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import Hls from "hls.js";
-
-function Video() {
-  const video_id=12;
+import Heatmap from "./Heatmap";
+interface videoProps {
+  video_id?: number;
+}
+function Video({ video_id = 12 }: videoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const videoSrc = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
-
 
   const myInfoInitialize = (): {
     array: [];
@@ -25,7 +26,7 @@ function Video() {
     );
   };
 
-  console.log(myInfoInitialize(),"test")
+  console.log(myInfoInitialize(), "test");
 
   const myInfo = useRef<{ array: []; video_id: number }>(myInfoInitialize());
 
@@ -52,28 +53,29 @@ function Video() {
     };
   }, []);
 
-  const setDataToLocalStorageFromAddSegment=()=>{
-    const previousPushedData=JSON.parse(localStorage.getItem("video-editor")||"[]");
-    
-    const index=previousPushedData.findIndex((item:any)=>item.video_id===video_id);
-    if(index!==-1){
-      previousPushedData[index]=myInfo.current
-    }
-    else{
-      previousPushedData.push(myInfo.current)
-    }
-    
-    localStorage.setItem("video-editor",JSON.stringify(previousPushedData));
+  const setDataToLocalStorageFromAddSegment = () => {
+    const previousPushedData = JSON.parse(
+      localStorage.getItem("video-editor") || "[]"
+    );
 
-  }
-  
+    const index = previousPushedData.findIndex(
+      (item: any) => item.video_id === video_id
+    );
+    if (index !== -1) {
+      previousPushedData[index] = myInfo.current;
+    } else {
+      previousPushedData.push(myInfo.current);
+    }
+
+    localStorage.setItem("video-editor", JSON.stringify(previousPushedData));
+  };
+
   const addSegment = (segment: { start: number; end: number }) => {
     if (segment.start > segment.end) {
       return;
     }
     console.log("Adding Segment: ", segment);
     myInfo.current = {
-
       ...myInfo.current,
       array: [
         ...myInfo.current.array,
@@ -83,17 +85,43 @@ function Video() {
         },
       ],
     };
-    console.log(myInfo.current)
+    console.log(myInfo.current);
 
     setDataToLocalStorageFromAddSegment();
-
-
-    
   };
 
   const getCurrentTime = (): number => {
     if (videoRef?.current?.currentTime) return videoRef.current.currentTime;
     else return 0;
+  };
+
+  const generateHeatmap = () => {
+    const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
+    const allWatcherArray: { start: number; end: number }[] = [];
+
+    all.map((item: { video_id: number; array: [] }) => {
+      if (item.video_id === video_id) {
+        allWatcherArray.push(...item.array);
+      }
+    });
+
+    const videoDuration = Math.floor(videoRef?.current?.duration || 0);
+    const freqArray = Array(videoDuration + 1).fill(0);
+
+    allWatcherArray.map((item: { start: number; end: number }) => {
+      item.start = Math.floor(item.start);
+      item.end = Math.floor(item.end);
+
+      freqArray[item.start] += 1;
+      freqArray[item.end + 1] += -1;
+    });
+
+    for (let i = 1; i < freqArray.length; i++) {
+      freqArray[i] += freqArray[i - 1];
+    }
+    freqArray.pop();
+
+    return freqArray;
   };
 
   const handlePlay = () => {
@@ -137,6 +165,10 @@ function Video() {
       lastWatched.current = getCurrentTime();
     }
   };
+  const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
+  const handleLoadedData = () => {
+    setHeatMapArray(generateHeatmap());
+  };
 
   return (
     <div>
@@ -145,12 +177,14 @@ function Video() {
         controls
         width="500"
         onPlay={handlePlay}
+        onLoadedData={handleLoadedData}
         onPause={handlePause}
         onSeeking={handleSeeking}
         onSeeked={handleSeeked}
         onEnded={handleEnded}
         onTimeUpdate={handleTimeUpdate}
       />
+      {HeatMapArray.length > 0 && <Heatmap pv={HeatMapArray} />}
     </div>
   );
 }
