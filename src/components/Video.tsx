@@ -50,7 +50,7 @@ function Video(video_id: 12) {
     if (segment.start > segment.end) {
       return;
     }
-
+    console.log("Adding Segment: ", segment);
     myInfo.current = {
       ...myInfo.current,
       array: [
@@ -61,7 +61,6 @@ function Video(video_id: 12) {
         },
       ],
     };
-    }
   };
 
   const getCurrentTime = (): number => {
@@ -76,10 +75,24 @@ function Video(video_id: 12) {
 
   const handlePause = () => {
     console.log("Video paused at time:", getCurrentTime());
+    addSegment({
+      start: startWatched.current,
+      end: lastWatched.current,
+    });
+
+    startWatched.current = getCurrentTime() + 1;
   };
 
   const handleSeeking = () => {
     console.log("Before seekd user at:  ", lastWatched.current);
+
+    addSegment({
+      start: startWatched.current,
+      end: lastWatched.current,
+    });
+
+    startWatched.current = getCurrentTime();
+
     console.log("Seeking to time:", getCurrentTime());
   };
 
