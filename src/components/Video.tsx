@@ -21,7 +21,7 @@ function Video({
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
-      
+
     });
   };
 
@@ -63,6 +63,9 @@ function Video({
 
     segmentFlooredArray.map((item:{start:number,end:number})=>{
       if(end===-1){
+        if(item.start===0){
+          uniqueWatchTime--;
+        }
         uniqueWatchTime+=(item.end-item.start+1);
         end=item.end+1;
       }
@@ -77,6 +80,7 @@ function Video({
         }
       }
     })
+
 
     return uniqueWatchTime;
   }
