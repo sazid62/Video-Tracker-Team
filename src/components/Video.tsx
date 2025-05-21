@@ -59,7 +59,7 @@ function Video({ video_id = 12 }: videoProps) {
     );
 
     const index = previousPushedData.findIndex(
-      (item: any) => item.video_id === video_id
+      (item: { video_id: number; array: [] }) => item.video_id === video_id
     );
     if (index !== -1) {
       previousPushedData[index] = myInfo.current;
@@ -170,6 +170,13 @@ function Video({ video_id = 12 }: videoProps) {
     setHeatMapArray(generateHeatmap());
   };
 
+  const handleEmptied = () => {
+    console.log("Video emptied at time:", getCurrentTime());
+  };
+  const handleAbort = () => {
+    console.log("Video aborted at time:", getCurrentTime());
+  };
+
   return (
     <div>
       <video
@@ -183,6 +190,8 @@ function Video({ video_id = 12 }: videoProps) {
         onSeeked={handleSeeked}
         onEnded={handleEnded}
         onTimeUpdate={handleTimeUpdate}
+        onEmptied={handleEmptied}
+        onAbort={handleAbort}
       />
       {HeatMapArray.length > 0 && <Heatmap pv={HeatMapArray} />}
     </div>
