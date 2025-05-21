@@ -117,7 +117,8 @@ function Video({
   const handlePlay = () => {
     isPlaying.current = true;
     console.log("Video played at time:", getCurrentTime());
-    startWatched.current = getCurrentTime();
+    startWatched.current =
+      startWatched.current !== 0 ? getCurrentTime() + 1 : getCurrentTime();
     lastWatched.current = getCurrentTime();
   };
 
@@ -129,8 +130,8 @@ function Video({
       end: lastWatched.current,
     });
 
-    startWatched.current = getCurrentTime();
-    lastWatched.current = getCurrentTime();
+    startWatched.current = getCurrentTime() + 1;
+    lastWatched.current = getCurrentTime() + 1;
   };
 
   const handleSeeking = () => {
@@ -147,8 +148,8 @@ function Video({
       });
     }
 
-    startWatched.current = getCurrentTime();
-    lastWatched.current = getCurrentTime();
+    startWatched.current = getCurrentTime() + 1;
+    lastWatched.current = getCurrentTime() + 1;
 
     console.log("Seeking to time:", getCurrentTime());
   };
@@ -157,8 +158,8 @@ function Video({
     // isPlaying.current = false;
     console.log("Seeked to time:", getCurrentTime());
 
-    startWatched.current = getCurrentTime();
-    lastWatched.current = getCurrentTime();
+    startWatched.current = getCurrentTime() + 1;
+    lastWatched.current = getCurrentTime() + 1;
   };
 
   const handleEnded = () => {
