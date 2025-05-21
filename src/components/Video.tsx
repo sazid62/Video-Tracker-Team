@@ -168,7 +168,7 @@ function Video({
   const handleSeeking = () => {
     console.log("Before seekd user at:  ", lastWatched.current);
 
-    if (getCurrentTime() > lastWatched.current) {
+    if (getCurrentTime() > lastWatched.current &&   lastWatched.current - startWatched.current >= 1 ) {
       addSegment({
         start: startWatched.current,
         end: lastWatched.current,
