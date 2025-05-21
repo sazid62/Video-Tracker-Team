@@ -10,6 +10,7 @@ function Video({ video_id = 12 }: videoProps) {
   const videoSrc = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
+
   const myInfoInitialize = (): {
     array: [];
     video_id: number;
@@ -24,6 +25,9 @@ function Video({ video_id = 12 }: videoProps) {
       }
     );
   };
+
+  console.log(myInfoInitialize(), "test");
+
   const myInfo = useRef<{ array: []; video_id: number }>(myInfoInitialize());
 
   useEffect(() => {
@@ -49,6 +53,23 @@ function Video({ video_id = 12 }: videoProps) {
     };
   }, []);
 
+  const setDataToLocalStorageFromAddSegment = () => {
+    const previousPushedData = JSON.parse(
+      localStorage.getItem("video-editor") || "[]"
+    );
+
+    const index = previousPushedData.findIndex(
+      (item: any) => item.video_id === video_id
+    );
+    if (index !== -1) {
+      previousPushedData[index] = myInfo.current;
+    } else {
+      previousPushedData.push(myInfo.current);
+    }
+
+    localStorage.setItem("video-editor", JSON.stringify(previousPushedData));
+  };
+
   const addSegment = (segment: { start: number; end: number }) => {
     if (segment.start > segment.end) {
       return;
@@ -64,8 +85,9 @@ function Video({ video_id = 12 }: videoProps) {
         },
       ],
     };
+    console.log(myInfo.current);
 
-    console.log(myInfo);
+    setDataToLocalStorageFromAddSegment();
   };
 
   const getCurrentTime = (): number => {
