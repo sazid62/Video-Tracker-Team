@@ -1,7 +1,10 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import Hls from "hls.js";
-
-function Video(video_id: 12) {
+import Heatmap from "./Heatmap";
+interface videoProps {
+  video_id?: number;
+}
+function Video({ video_id = 12 }: videoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const videoSrc = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
@@ -61,11 +64,42 @@ function Video(video_id: 12) {
         },
       ],
     };
+
+    console.log(myInfo);
   };
 
   const getCurrentTime = (): number => {
     if (videoRef?.current?.currentTime) return videoRef.current.currentTime;
     else return 0;
+  };
+
+  const generateHeatmap = () => {
+    const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
+    const allWatcherArray: { start: number; end: number }[] = [];
+
+    all.map((item: { video_id: number; array: [] }) => {
+      if (item.video_id === video_id) {
+        allWatcherArray.push(...item.array);
+      }
+    });
+
+    const videoDuration = Math.floor(videoRef?.current?.duration || 0);
+    const freqArray = Array(videoDuration + 1).fill(0);
+
+    allWatcherArray.map((item: { start: number; end: number }) => {
+      item.start = Math.floor(item.start);
+      item.end = Math.floor(item.end);
+
+      freqArray[item.start] += 1;
+      freqArray[item.end + 1] += -1;
+    });
+
+    for (let i = 1; i < freqArray.length; i++) {
+      freqArray[i] += freqArray[i - 1];
+    }
+    freqArray.pop();
+
+    return freqArray;
   };
 
   const handlePlay = () => {
@@ -109,6 +143,10 @@ function Video(video_id: 12) {
       lastWatched.current = getCurrentTime();
     }
   };
+  const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
+  const handleLoadedData = () => {
+    setHeatMapArray(generateHeatmap());
+  };
 
   return (
     <div>
@@ -117,12 +155,14 @@ function Video(video_id: 12) {
         controls
         width="500"
         onPlay={handlePlay}
+        onLoadedData={handleLoadedData}
         onPause={handlePause}
         onSeeking={handleSeeking}
         onSeeked={handleSeeked}
         onEnded={handleEnded}
         onTimeUpdate={handleTimeUpdate}
       />
+      {HeatMapArray.length > 0 && <Heatmap pv={HeatMapArray} />}
     </div>
   );
 }
