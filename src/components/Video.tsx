@@ -11,6 +11,15 @@ function Video({ video_id = 12 }: videoProps) {
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
 
+  const handleBeforeUnload=()=>{
+    addSegment({
+      start: startWatched.current,
+      end: lastWatched.current,
+    });
+  }
+
+  window.onbeforeunload=handleBeforeUnload;
+
   const myInfoInitialize = (): {
     array: [];
     video_id: number;
@@ -71,7 +80,7 @@ function Video({ video_id = 12 }: videoProps) {
   };
 
   const addSegment = (segment: { start: number; end: number }) => {
-    if (segment.start > segment.end) {
+    if (segment.start >= segment.end) {
       return;
     }
     console.log("Adding Segment: ", segment);
@@ -136,6 +145,7 @@ function Video({ video_id = 12 }: videoProps) {
       end: lastWatched.current,
     });
 
+
     startWatched.current = getCurrentTime() + 1;
   };
 
@@ -158,11 +168,22 @@ function Video({ video_id = 12 }: videoProps) {
 
   const handleEnded = () => {
     console.log("Video ended at time:", getCurrentTime());
+    addSegment({
+      start: startWatched.current,
+      end: lastWatched.current,
+    });
   };
 
   const handleTimeUpdate = () => {
     if (!videoRef.current?.seeking) {
       lastWatched.current = getCurrentTime();
+      if(lastWatched.current-startWatched.current>=5){
+        addSegment({
+          start: startWatched.current,
+          end: lastWatched.current,
+        });
+        startWatched.current=getCurrentTime()+1;
+      }
     }
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
