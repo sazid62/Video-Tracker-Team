@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Segment Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .video-container {
+            margin-bottom: 20px;
+        }
+        video {
+            width: 100%;
+            max-height: 450px;
+            background-color: #000;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .segments-container {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .segment-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .segment-item {
+            padding: 5px 10px;
+            margin: 5px 0;
+            background-color: #f1f1f1;
+            border-radius: 3px;
+        }
+        h2 {
+            margin-top: 30px;
+        }
+        button {
+            padding: 8px 12px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #2b6ed9;
+        }
+        .status {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Segment Tracker</h1>
+    
+    <div class="video-container">
+        <video id="videoPlayer" controls>
+            <source src="/api/placeholder/400/320" type="video/mp4">
+            Your browser does not support the video element.
+        </video>
+    </div>
+    
+    <div class="status" id="playerStatus">Status: Ready</div>
+    
+    <div class="controls">
+        <button id="clearSegments">Clear All Segments</button>
+    </div>
+    
+    <div class="segments-container">
+        <h2>Tracked Segments</h2>
+        <div class="segment-list" id="segmentList">
+            <p id="noSegments">No segments recorded yet.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const segmentList = document.getElementById('segmentList');
+            const noSegments = document.getElementById('noSegments');
+            const clearSegmentsBtn = document.getElementById('clearSegments');
+            const playerStatus = document.getElementById('playerStatus');
+            
+            // Segment tracking variables
+            let currentSegmentStart = null;
+            let segments = [];
+            
+            // Load segments from localStorage
+            loadSegments();
+            
+            // Add event listeners to video player
+            videoPlayer.addEventListener('play', handlePlay);
+            videoPlayer.addEventListener('pause', handlePause);
+            videoPlayer.addEventListener('ended', handleEnded);
+            videoPlayer.addEventListener('seeking', handleSeeking);
+            
+            // Clear segments button
+            clearSegmentsBtn.addEventListener('click', function() {
+                segments = [];
+                saveSegments();
+                updateSegmentList();
+                playerStatus.textContent = 'Status: All segments cleared';
+            });
+            
+            // Handle play event
+            function handlePlay() {
+                // If we don't have a start time, set it to current time
+                if (currentSegmentStart === null) {
+                    currentSegmentStart = videoPlayer.currentTime;
+                    playerStatus.textContent = `Status: Playing (Segment started at ${formatTime(currentSegmentStart)})`;
+                } else {
+                    playerStatus.textContent = `Status: Playing (Continuing segment from ${formatTime(currentSegmentStart)})`;
+                }
+            }
+            
+            // Handle pause event
+            function handlePause() {
+                if (currentSegmentStart !== null) {
+                    addSegment(currentSegmentStart, videoPlayer.currentTime);
+                    currentSegmentStart = null;
+                    playerStatus.textContent = `Status: Paused (Segment saved)`;
+                } else {
+                    playerStatus.textContent = `Status: Paused`;
+                }
+            }
+            
+            // Handle video ended
+            function handleEnded() {
+                if (currentSegmentStart !== null) {
+                    addSegment(currentSegmentStart, videoPlayer.currentTime);
+                    currentSegmentStart = null;
+                    playerStatus.textContent = `Status: Ended (Final segment saved)`;
+                } else {
+                    playerStatus.textContent = `Status: Ended`;
+                }
+            }
+            
+            // Handle seeking
+            function handleSeeking() {
+                if (currentSegmentStart !== null) {
+                    // Store the segment up to before the seek
+                    addSegment(currentSegmentStart, videoPlayer.currentTime);
+                    // Reset the segment start time to new position after seeking is complete
+                    videoPlayer.addEventListener('seeked', function onSeeked() {
+                        currentSegmentStart = videoPlayer.currentTime;
+                        playerStatus.textContent = `Status: Seeked to ${formatTime(currentSegmentStart)}`;
+                        videoPlayer.removeEventListener('seeked', onSeeked);
+                    });
+                } else {
+                    // Just update the start time after seeking
+                    videoPlayer.addEventListener('seeked', function onSeeked() {
+                        currentSegmentStart = videoPlayer.playing ? videoPlayer.currentTime : null;
+                        playerStatus.textContent = `Status: Seeked to ${formatTime(videoPlayer.currentTime)}`;
+                        videoPlayer.removeEventListener('seeked', onSeeked);
+                    });
+                }
+            }
+            
+            // Add a segment to the collection
+            function addSegment(start, end) {
+                // Only add if segment is valid (start time < end time)
+                if (start < end && end - start >= 0.5) { // Minimum 0.5 seconds for a segment
+                    const segment = {
+                        start: roundToDecimals(start, 2),
+                        end: roundToDecimals(end, 2),
+                        duration: roundToDecimals(end - start, 2),
+                        timestamp: new Date().toISOString()
+                    };
+                    segments.push(segment);
+                    saveSegments();
+                    updateSegmentList();
+                }
+            }
+            
+            // Save segments to localStorage
+            function saveSegments() {
+                localStorage.setItem('videoSegments', JSON.stringify(segments));
+            }
+            
+            // Load segments from localStorage
+            function loadSegments() {
+                const savedSegments = localStorage.getItem('videoSegments');
+                if (savedSegments) {
+                    segments = JSON.parse(savedSegments);
+                    updateSegmentList();
+                }
+            }
+            
+            // Update the segment list display
+            function updateSegmentList() {
+                if (segments.length === 0) {
+                    noSegments.style.display = 'block';
+                    segmentList.innerHTML = '';
+                    segmentList.appendChild(noSegments);
+                    return;
+                }
+                
+                noSegments.style.display = 'none';
+                segmentList.innerHTML = '';
+                
+                segments.forEach((segment, index) => {
+                    const segmentItem = document.createElement('div');
+                    segmentItem.className = 'segment-item';
+                    segmentItem.innerHTML = `
+                        <strong>Segment ${index + 1}:</strong> ${formatTime(segment.start)} - ${formatTime(segment.end)} 
+                        (Duration: ${segment.duration}s)
+                    `;
+                    
+                    // Add a button to play this segment
+                    const playButton = document.createElement('button');
+                    playButton.textContent = 'Play Segment';
+                    playButton.style.marginLeft = '10px';
+                    playButton.addEventListener('click', function() {
+                        videoPlayer.currentTime = segment.start;
+                        videoPlayer.play();
+                        // Optional: pause at end of segment
+                        setTimeout(() => {
+                            if (videoPlayer.currentTime >= segment.end) {
+                                videoPlayer.pause();
+                            }
+                        }, segment.duration * 1000);
+                    });
+                    
+                    segmentItem.appendChild(playButton);
+                    segmentList.appendChild(segmentItem);
+                });
+            }
+            
+            // Helper function to format time as MM:SS.ms
+            function formatTime(timeInSeconds) {
+                const minutes = Math.floor(timeInSeconds / 60);
+                const seconds = Math.floor(timeInSeconds % 60);
+                const milliseconds = Math.floor((timeInSeconds % 1) * 100);
+                
+                return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+            }
+            
+            // Helper function to round to a specific number of decimal places
+            function roundToDecimals(num, places) {
+                const multiplier = Math.pow(10, places);
+                return Math.round(num * multiplier) / multiplier;
+            }
+            
+            // Fix for detecting if video is currently playing
+            Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
+                get: function() {
+                    return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
