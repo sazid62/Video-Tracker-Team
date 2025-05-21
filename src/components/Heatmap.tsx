@@ -3,8 +3,6 @@ interface HeatmapProps {
   pv: number[];
 }
 export default function Heatmap({ pv }: HeatmapProps) {
-  console.log(pv);
-
   const data = pv.map((val: number, i: number) => ({ name: i, views: val }));
   return (
     <div className="h-30 mb-4">

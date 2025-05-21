@@ -4,15 +4,18 @@ import Heatmap from "./Heatmap";
 interface videoProps {
   video_id?: number;
   video_src?: string;
+  watchIntervalTime?: number;
 }
 function Video({
   video_id = 12,
   video_src = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+  watchIntervalTime = 30,
 }: videoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
+  const isPlaying = useRef(false);
 
   const handleBeforeUnload = () => {
     addSegment({
@@ -37,8 +40,6 @@ function Video({
       }
     );
   };
-
-  console.log(myInfoInitialize(), "test");
 
   const myInfo = useRef<{ array: []; video_id: number }>(myInfoInitialize());
 
@@ -114,24 +115,32 @@ function Video({
   };
 
   const handlePlay = () => {
+    isPlaying.current = true;
     console.log("Video played at time:", getCurrentTime());
     startWatched.current = getCurrentTime();
+    lastWatched.current = getCurrentTime();
   };
 
   const handlePause = () => {
+    isPlaying.current = false;
     console.log("Video paused at time:", getCurrentTime());
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
     });
 
-    startWatched.current = getCurrentTime() + 1;
+    startWatched.current = getCurrentTime();
+    lastWatched.current = getCurrentTime();
   };
 
   const handleSeeking = () => {
     console.log("Before seekd user at:  ", lastWatched.current);
 
-    if (getCurrentTime() > lastWatched.current) {
+    if (
+      isPlaying.current &&
+      getCurrentTime() > lastWatched.current &&
+      lastWatched.current - startWatched.current >= 1
+    ) {
       addSegment({
         start: startWatched.current,
         end: lastWatched.current,
@@ -139,28 +148,39 @@ function Video({
     }
 
     startWatched.current = getCurrentTime();
+    lastWatched.current = getCurrentTime();
 
     console.log("Seeking to time:", getCurrentTime());
   };
 
   const handleSeeked = () => {
+    // isPlaying.current = false;
     console.log("Seeked to time:", getCurrentTime());
-    startWatched.current = getCurrentTime() + 1;
-    lastWatched.current = getCurrentTime() + 1;
+
+    startWatched.current = getCurrentTime();
+    lastWatched.current = getCurrentTime();
   };
 
   const handleEnded = () => {
     console.log("Video ended at time:", getCurrentTime());
+    isPlaying.current = false;
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
     });
+
+    lastWatched.current = getCurrentTime();
+    startWatched.current = getCurrentTime();
   };
 
   const handleTimeUpdate = () => {
     if (!videoRef.current?.seeking) {
       lastWatched.current = getCurrentTime();
-      if (lastWatched.current - startWatched.current >= 5) {
+      // console.log(startWatched.current, lastWatched.current, isPlaying.current);
+      if (
+        lastWatched.current - startWatched.current >= watchIntervalTime &&
+        isPlaying.current
+      ) {
         addSegment({
           start: startWatched.current,
           end: lastWatched.current,
