@@ -43,6 +43,43 @@ function Video({
 
   const myInfo = useRef<{ array: []; video_id: number }>(myInfoInitialize());
 
+  const getUniqueWatchTime=()=>{
+    let end:number=-1;
+    const segmentFlooredArray=myInfo.current.array.map((item:{start:number,end:number})=>{
+      return {
+        start:Math.floor(item.start),
+        end:Math.floor(item.end)
+      }
+    })
+    segmentFlooredArray.sort((a:{start:number,end:number},b:{start:number,end:number})=>{
+      if(a.start==b.start){
+        return b.end-a.end
+      }
+      return a.start-b.start
+    });
+
+    let uniqueWatchTime:number=0;
+
+    segmentFlooredArray.map((item:{start:number,end:number})=>{
+      if(end===-1){
+        uniqueWatchTime+=(item.end-item.start+1);
+        end=item.end+1;
+      }
+      else{
+        if(item.start>end){
+          uniqueWatchTime+=(item.end-item.start+1);
+          end=item.end+1;
+        }
+        else{
+          uniqueWatchTime+=(Math.max(0,item.end-end+1));
+          end=Math.max(end,item.end+1);
+        }
+      }
+    })
+
+    return uniqueWatchTime;
+  }
+
   const setDataToLocalStorageFromAddSegment = () => {
     const previousPushedData = JSON.parse(
       localStorage.getItem("video-editor") || "[]"
@@ -222,7 +259,14 @@ function Video({
         onAbort={handleAbort}
       />
       {HeatMapArray.length > 0 && <Heatmap pv={HeatMapArray} />}
+      <br />
+      <br />
+      {
+        getUniqueWatchTime()
+      }
     </div>
+
+    
   );
 }
 
