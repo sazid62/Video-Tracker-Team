@@ -5,6 +5,9 @@ interface videoProps {
   video_id?: number;
   video_src?: string;
   watchIntervalTime?: number;
+  onTabChange?: {
+    pause: boolean;
+  };
 }
 interface myInfoType {
   array: [];
@@ -15,6 +18,7 @@ function Video({
   video_id = 12,
   video_src = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
   watchIntervalTime = 30,
+  onTabChange = { pause: false },
 }: videoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -259,16 +263,31 @@ function Video({
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        if (videoRef?.current) videoRef?.current.pause();
+        if (videoRef?.current) {
+          console.log(onTabChange);
+          if (onTabChange.pause) videoRef?.current.pause();
+        }
       }
+    };
+    const handleBuffering = () => {
+      addSegment();
+      console.log("Buffering");
+    };
+    const handleNetworkError = () => {
+      addSegment();
+      console.log("Network Error");
     };
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("enterpictureinpicture", handleEnterPiP);
     document.addEventListener("leavepictureinpicture", handleLeavePiP);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    videoRef?.current?.addEventListener("waiting", handleBuffering);
+    videoRef?.current?.addEventListener("stalled", handleNetworkError);
     window.onbeforeunload = handleBeforeUnload;
 
     return () => {
+      videoRef?.current?.removeEventListener("waiting", handleBuffering);
+      videoRef?.current?.removeEventListener("stalled", handleNetworkError);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("fullscreenchange", handleFullScreenChange);
       document.removeEventListener("enterpictureinpicture", handleEnterPiP);
