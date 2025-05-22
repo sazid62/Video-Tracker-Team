@@ -295,6 +295,7 @@ function Video({
       <br />
       <br />
       {getUniqueWatchTime()}
+      {`   seconds unique Viewed by you`}
     </div>
   );
 }
