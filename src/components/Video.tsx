@@ -23,16 +23,9 @@ function Video({
   const isPlaying = useRef(false);
   const screen_mode = useRef("normal");
   const lastVolume=useRef(1);
+  const muteStatus=useRef(false);
 
-  const handleBeforeUnload = () => {
-    addSegment({
-      start: startWatched.current,
-      end: lastWatched.current,
-      current_volume:videoRef?.current?.volume as number
-    });
-  };
-
-  window.onbeforeunload = handleBeforeUnload;
+  
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -130,6 +123,8 @@ function Video({
           start: startWatched.current,
           end: lastWatched.current,
           screen_mode: screen_mode.current,
+          current_volume:lastVolume.current,
+          isMuted:muteStatus.current
         },
       ],
     };
@@ -181,6 +176,7 @@ function Video({
       startWatched.current !== 0 ? getCurrentTime() + 1 : getCurrentTime();
     lastWatched.current = getCurrentTime();
     lastVolume.current=videoRef.current?.volume as number
+    muteStatus.current=videoRef.current?.muted as boolean
   };
 
   const handlePause = () => {
@@ -288,6 +284,13 @@ function Video({
       document.removeEventListener("leavepictureinpicture", handleLeavePiP);
     };
   }, []);
+  const handleVolumeChange=()=>{
+    if(isPlaying.current){
+      addSegment()
+    }
+    lastVolume.current=videoRef.current?.volume as number
+    muteStatus.current=videoRef.current?.muted as boolean
+  }
 
   return (
     <div>
@@ -297,7 +300,7 @@ function Video({
         src={video_src}
         controls
         onPlay={handlePlay}
-        // onVolumeChange={handleVolumeChange}
+        onVolumeChange={handleVolumeChange}
         onLoadedData={handleLoadedData}
         onPause={handlePause}
         onSeeking={handleSeeking}
