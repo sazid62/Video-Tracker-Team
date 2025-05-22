@@ -16,12 +16,13 @@ function Video({
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
   const isPlaying = useRef(false);
+  const lastVolume=useRef(1);
 
   const handleBeforeUnload = () => {
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
-
+      current_volume:videoRef?.current?.volume as number
     });
   };
 
@@ -104,7 +105,7 @@ function Video({
     localStorage.setItem("video-editor", JSON.stringify(previousPushedData));
   };
 
-  const addSegment = (segment: { start: number; end: number }) => {
+  const addSegment = (segment: { start: number; end: number;current_volume:number }) => {
     if (segment.start >= segment.end) {
       return;
     }
@@ -116,6 +117,7 @@ function Video({
         {
           start: segment.start,
           end: segment.end,
+          current_volume:segment.current_volume
         },
       ],
     };
@@ -162,9 +164,11 @@ function Video({
   const handlePlay = () => {
     isPlaying.current = true;
     console.log("Video played at time:", getCurrentTime());
+    console.log("My current Playing sound is",videoRef.current?.volume)
     startWatched.current =
       startWatched.current !== 0 ? getCurrentTime() + 1 : getCurrentTime();
     lastWatched.current = getCurrentTime();
+    lastVolume.current=videoRef.current?.volume as number
   };
 
   const handlePause = () => {
@@ -173,6 +177,7 @@ function Video({
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
+      current_volume:videoRef?.current?.volume as number
     });
 
     startWatched.current = getCurrentTime() + 1;
@@ -190,6 +195,7 @@ function Video({
       addSegment({
         start: startWatched.current,
         end: lastWatched.current,
+        current_volume:videoRef?.current?.volume as number
       });
     }
 
@@ -213,6 +219,7 @@ function Video({
     addSegment({
       start: startWatched.current,
       end: lastWatched.current,
+      current_volume:videoRef?.current?.volume as number
     });
 
     lastWatched.current = getCurrentTime();
@@ -230,6 +237,7 @@ function Video({
         addSegment({
           start: startWatched.current,
           end: lastWatched.current,
+          current_volume:videoRef?.current?.volume as number
         });
         startWatched.current = getCurrentTime() + 1;
       }
@@ -254,6 +262,32 @@ function Video({
     console.log("Video aborted at time:", getCurrentTime());
   };
 
+  const handleVolumeChange=()=>{
+    if(isPlaying.current && !videoRef.current?.muted){
+      addSegment({
+        start: startWatched.current,
+        end: lastWatched.current,
+        current_volume:lastVolume.current
+      });
+      
+      startWatched.current = getCurrentTime() + 1;
+
+    }
+    if(videoRef.current?.muted && isPlaying.current){
+      addSegment({
+        start: startWatched.current,
+        end: lastWatched.current,
+        current_volume:lastVolume.current
+      });
+    }
+    lastVolume.current=videoRef.current?.volume as number
+    if(videoRef.current?.muted){
+      lastVolume.current=0;
+    }
+    console.log("Volume Changed",videoRef.current?.volume);
+    // console.log("mute status",videoRef.current?.muted);
+  }
+
   return (
     <div>
       <video
@@ -262,6 +296,7 @@ function Video({
         src={video_src}
         controls
         onPlay={handlePlay}
+        onVolumeChange={handleVolumeChange}
         onLoadedData={handleLoadedData}
         onPause={handlePause}
         onSeeking={handleSeeking}
