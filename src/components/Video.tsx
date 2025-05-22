@@ -279,7 +279,7 @@ function Video({
         
       }
       {
-        `   seconds Viewed`
+        `   seconds unique Viewed by you`
       }
     </div>
 
