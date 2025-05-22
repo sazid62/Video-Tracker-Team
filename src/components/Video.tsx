@@ -30,6 +30,7 @@ function Video({
   const myInfoInitialize = (): {
     array: [];
     video_id: number;
+    lastWatchedTime:number
   } => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
     return (
@@ -38,11 +39,12 @@ function Video({
       ) || {
         array: [],
         video_id: video_id,
+        lastWatchedTime:0
       }
     );
   };
 
-  const myInfo = useRef<{ array: []; video_id: number }>(myInfoInitialize());
+  const myInfo = useRef<{ array: []; video_id: number ;lastWatchedTime:number}>(myInfoInitialize());
 
   const getUniqueWatchTime=()=>{
     let end:number=-1;
@@ -91,7 +93,7 @@ function Video({
     );
 
     const index = previousPushedData.findIndex(
-      (item: { video_id: number; array: [] }) => item.video_id === video_id
+      (item: { video_id: number; array: [];lastWatchedTime:number }) => item.video_id === video_id
     );
     if (index !== -1) {
       previousPushedData[index] = myInfo.current;
@@ -117,7 +119,8 @@ function Video({
         },
       ],
     };
-    console.log(myInfo.current);
+    myInfo.current.lastWatchedTime=segment.end;
+    // console.log(myInfo.current);
 
     setDataToLocalStorageFromAddSegment();
   };
@@ -236,6 +239,10 @@ function Video({
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
   const handleLoadedData = () => {
+
+    if(videoRef.current&&myInfo.current){
+      videoRef.current.currentTime=myInfo.current.lastWatchedTime;
+    }
     console.log(videoRef.current?.duration);
     setHeatMapArray(generateHeatmap());
   };
