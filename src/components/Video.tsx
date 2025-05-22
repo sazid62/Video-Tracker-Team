@@ -297,7 +297,7 @@ function Video({
         src={video_src}
         controls
         onPlay={handlePlay}
-        onVolumeChange={handleVolumeChange}
+        // onVolumeChange={handleVolumeChange}
         onLoadedData={handleLoadedData}
         onPause={handlePause}
         onSeeking={handleSeeking}
