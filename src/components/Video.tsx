@@ -1,10 +1,15 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 import Heatmap from "./Heatmap";
 interface videoProps {
   video_id?: number;
   video_src?: string;
   watchIntervalTime?: number;
+}
+interface myInfoType {
+  array: [];
+  video_id: number;
+  lastWatchedTime: number;
 }
 function Video({
   video_id = 12,
@@ -16,22 +21,9 @@ function Video({
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
   const isPlaying = useRef(false);
+  const screen_mode = useRef("normal");
 
-  const handleBeforeUnload = () => {
-    addSegment({
-      start: startWatched.current,
-      end: lastWatched.current,
-
-    });
-  };
-
-  window.onbeforeunload = handleBeforeUnload;
-
-  const myInfoInitialize = (): {
-    array: [];
-    video_id: number;
-    lastWatchedTime:number
-  } => {
+  const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
     return (
       all.find(
@@ -39,53 +31,57 @@ function Video({
       ) || {
         array: [],
         video_id: video_id,
-        lastWatchedTime:0
+        lastWatchedTime: 0,
       }
     );
   };
 
-  const myInfo = useRef<{ array: []; video_id: number ;lastWatchedTime:number}>(myInfoInitialize());
+  const myInfo = useRef<myInfoType>(myInfoInitialize());
 
-  const getUniqueWatchTime=()=>{
-    let end:number=-1;
-    const segmentFlooredArray=myInfo.current.array.map((item:{start:number,end:number})=>{
-      return {
-        start:Math.floor(item.start),
-        end:Math.floor(item.end)
+  const getUniqueWatchTime = () => {
+    let end: number = -1;
+    const segmentFlooredArray = myInfo.current.array.map(
+      (item: { start: number; end: number }) => {
+        return {
+          start: Math.floor(item.start),
+          end: Math.floor(item.end),
+        };
       }
-    })
-    segmentFlooredArray.sort((a:{start:number,end:number},b:{start:number,end:number})=>{
-      if(a.start==b.start){
-        return b.end-a.end
+    );
+    segmentFlooredArray.sort(
+      (
+        a: { start: number; end: number },
+        b: { start: number; end: number }
+      ) => {
+        if (a.start == b.start) {
+          return b.end - a.end;
+        }
+        return a.start - b.start;
       }
-      return a.start-b.start
-    });
+    );
 
-    let uniqueWatchTime:number=0;
+    let uniqueWatchTime: number = 0;
 
-    segmentFlooredArray.map((item:{start:number,end:number})=>{
-      if(end===-1){
-        if(item.start===0){
+    segmentFlooredArray.map((item: { start: number; end: number }) => {
+      if (end === -1) {
+        if (item.start === 0) {
           uniqueWatchTime--;
         }
-        uniqueWatchTime+=(item.end-item.start+1);
-        end=item.end+1;
-      }
-      else{
-        if(item.start>end){
-          uniqueWatchTime+=(item.end-item.start+1);
-          end=item.end+1;
-        }
-        else{
-          uniqueWatchTime+=(Math.max(0,item.end-end+1));
-          end=Math.max(end,item.end+1);
+        uniqueWatchTime += item.end - item.start + 1;
+        end = item.end + 1;
+      } else {
+        if (item.start > end) {
+          uniqueWatchTime += item.end - item.start + 1;
+          end = item.end + 1;
+        } else {
+          uniqueWatchTime += Math.max(0, item.end - end + 1);
+          end = Math.max(end, item.end + 1);
         }
       }
-    })
-
+    });
 
     return uniqueWatchTime;
-  }
+  };
 
   const setDataToLocalStorageFromAddSegment = () => {
     const previousPushedData = JSON.parse(
@@ -93,7 +89,8 @@ function Video({
     );
 
     const index = previousPushedData.findIndex(
-      (item: { video_id: number; array: [];lastWatchedTime:number }) => item.video_id === video_id
+      (item: { video_id: number; array: []; lastWatchedTime: number }) =>
+        item.video_id === video_id
     );
     if (index !== -1) {
       previousPushedData[index] = myInfo.current;
@@ -104,24 +101,30 @@ function Video({
     localStorage.setItem("video-editor", JSON.stringify(previousPushedData));
   };
 
-  const addSegment = (segment: { start: number; end: number }) => {
-    if (segment.start >= segment.end) {
+  const addSegment = () => {
+    if (startWatched.current >= lastWatched.current) {
       return;
     }
-    console.log("Adding Segment: ", segment);
+    console.log("Adding Segment: ", {
+      start: startWatched.current,
+      end: lastWatched.current,
+      screen_mode: screen_mode.current,
+    });
+
     myInfo.current = {
       ...myInfo.current,
       array: [
         ...myInfo.current.array,
         {
-          start: segment.start,
-          end: segment.end,
+          start: startWatched.current,
+          end: lastWatched.current,
+          screen_mode: screen_mode.current,
         },
       ],
     };
-    myInfo.current.lastWatchedTime=segment.end;
-    // console.log(myInfo.current);
-
+    myInfo.current.lastWatchedTime = lastWatched.current;
+    startWatched.current = getCurrentTime() + 1;
+    lastWatched.current = getCurrentTime() + 1;
     setDataToLocalStorageFromAddSegment();
   };
 
@@ -170,13 +173,7 @@ function Video({
   const handlePause = () => {
     isPlaying.current = false;
     console.log("Video paused at time:", getCurrentTime());
-    addSegment({
-      start: startWatched.current,
-      end: lastWatched.current,
-    });
-
-    startWatched.current = getCurrentTime() + 1;
-    lastWatched.current = getCurrentTime() + 1;
+    addSegment();
   };
 
   const handleSeeking = () => {
@@ -187,14 +184,8 @@ function Video({
       getCurrentTime() > lastWatched.current &&
       lastWatched.current - startWatched.current >= 1
     ) {
-      addSegment({
-        start: startWatched.current,
-        end: lastWatched.current,
-      });
+      addSegment();
     }
-
-    startWatched.current = getCurrentTime() + 1;
-    lastWatched.current = getCurrentTime() + 1;
 
     console.log("Seeking to time:", getCurrentTime());
   };
@@ -210,16 +201,11 @@ function Video({
   const handleEnded = () => {
     console.log("Video ended at time:", getCurrentTime());
     isPlaying.current = false;
-    addSegment({
-      start: startWatched.current,
-      end: lastWatched.current,
-    });
-
-    lastWatched.current = getCurrentTime();
-    startWatched.current = getCurrentTime();
+    addSegment();
   };
 
   const handleTimeUpdate = () => {
+    // console.log(screen_mode.current);
     if (!videoRef.current?.seeking) {
       lastWatched.current = getCurrentTime();
       // console.log(startWatched.current, lastWatched.current, isPlaying.current);
@@ -227,11 +213,7 @@ function Video({
         lastWatched.current - startWatched.current >= watchIntervalTime &&
         isPlaying.current
       ) {
-        addSegment({
-          start: startWatched.current,
-          end: lastWatched.current,
-        });
-        startWatched.current = getCurrentTime() + 1;
+        addSegment();
       }
     }
 
@@ -239,20 +221,60 @@ function Video({
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
   const handleLoadedData = () => {
-
-    if(videoRef.current&&myInfo.current){
-      videoRef.current.currentTime=myInfo.current.lastWatchedTime;
+    if (videoRef.current && myInfo.current) {
+      videoRef.current.currentTime = myInfo.current.lastWatchedTime;
     }
     console.log(videoRef.current?.duration);
     setHeatMapArray(generateHeatmap());
   };
 
-  const handleEmptied = () => {
-    console.log("Video emptied at time:", getCurrentTime());
-  };
-  const handleAbort = () => {
-    console.log("Video aborted at time:", getCurrentTime());
-  };
+  useEffect(() => {
+    console.log("Dukese");
+    const handleFullScreenChange = () => {
+      addSegment();
+      console.log(document.fullscreenElement, "FullScreenElemt");
+      screen_mode.current = document.fullscreenElement
+        ? "fullscreen"
+        : "normal";
+      console.log(screen_mode.current, getCurrentTime());
+    };
+
+    const handleEnterPiP = () => {
+      addSegment();
+      console.log("PIP mode ON");
+      screen_mode.current = "pip";
+    };
+
+    const handleLeavePiP = () => {
+      addSegment();
+      console.log("PIP mode OFF");
+      screen_mode.current = document.fullscreenElement
+        ? "fullscreen"
+        : "normal";
+
+      console.log(screen_mode.current, "Set Screen Mode");
+    };
+    const handleBeforeUnload = () => {
+      addSegment();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        if (videoRef?.current) videoRef?.current.pause();
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+    document.addEventListener("enterpictureinpicture", handleEnterPiP);
+    document.addEventListener("leavepictureinpicture", handleLeavePiP);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.onbeforeunload = handleBeforeUnload;
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      document.removeEventListener("enterpictureinpicture", handleEnterPiP);
+      document.removeEventListener("leavepictureinpicture", handleLeavePiP);
+    };
+  }, []);
 
   return (
     <div>
@@ -268,22 +290,13 @@ function Video({
         onSeeked={handleSeeked}
         onEnded={handleEnded}
         onTimeUpdate={handleTimeUpdate}
-        onEmptied={handleEmptied}
-        onAbort={handleAbort}
       />
       {HeatMapArray.length > 0 && <Heatmap pv={HeatMapArray} />}
       <br />
       <br />
-      {
-        getUniqueWatchTime()
-        
-      }
-      {
-        `   seconds unique Viewed by you`
-      }
+      {getUniqueWatchTime()}
+      {`   seconds unique Viewed by you`}
     </div>
-
-    
   );
 }
 
