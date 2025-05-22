@@ -12,6 +12,9 @@ function App() {
           "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
         }
         watchIntervalTime={5}
+        onTabChange={{
+          pause: true,
+        }}
       />
     </>
   );
