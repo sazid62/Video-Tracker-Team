@@ -276,6 +276,10 @@ function Video({
       <br />
       {
         getUniqueWatchTime()
+        
+      }
+      {
+        `   seconds Viewed`
       }
     </div>
 
