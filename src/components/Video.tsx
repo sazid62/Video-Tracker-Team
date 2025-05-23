@@ -28,7 +28,13 @@ function Video({
   const screen_mode = useRef("normal");
   const lastVolume=useRef(1);
   const muteStatus=useRef(false);
+  const seekStatus=useRef("noseeked");
 
+
+  
+
+
+  
   
 
   const myInfoInitialize = (): myInfoType => {
@@ -118,7 +124,9 @@ function Video({
       end: lastWatched.current,
       screen_mode: screen_mode.current,
     });
-
+    if(videoRef.current?.seeking &&seekStatus.current==='noseeked'){
+      seekStatus.current="mouse";
+    }
     myInfo.current = {
       ...myInfo.current,
       array: [
@@ -128,13 +136,16 @@ function Video({
           end: lastWatched.current,
           screen_mode: screen_mode.current,
           current_volume:lastVolume.current,
-          isMuted:muteStatus.current
+          isMuted:muteStatus.current,
+          seekByMouseOrKey:seekStatus.current
+
         },
       ],
     };
     myInfo.current.lastWatchedTime = lastWatched.current;
     startWatched.current = getCurrentTime() + 1;
     lastWatched.current = getCurrentTime() + 1;
+    seekStatus.current="noseeked";
     setDataToLocalStorageFromAddSegment();
   };
 
@@ -186,6 +197,7 @@ function Video({
   const handlePause = () => {
     isPlaying.current = false;
     console.log("Video paused at time:", getCurrentTime());
+    
     addSegment();
   };
 
@@ -197,6 +209,11 @@ function Video({
       getCurrentTime() > lastWatched.current &&
       lastWatched.current - startWatched.current >= 1
     ) {
+      // console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+      if(seekStatus.current==="noseeked"){
+        
+        seekStatus.current="mouse";
+      }
       addSegment();
     }
 
@@ -206,7 +223,7 @@ function Video({
   const handleSeeked = () => {
     // isPlaying.current = false;
     console.log("Seeked to time:", getCurrentTime());
-
+    console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
     startWatched.current = getCurrentTime() + 1;
     lastWatched.current = getCurrentTime() + 1;
   };
@@ -273,6 +290,7 @@ function Video({
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         if (videoRef?.current) {
+          
           console.log(onTabChange);
           if (onTabChange.pause) videoRef?.current.pause();
         }
@@ -286,12 +304,19 @@ function Video({
       addSegment();
       console.log("Network Error");
     };
+
+    
+    
+    
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("enterpictureinpicture", handleEnterPiP);
     document.addEventListener("leavepictureinpicture", handleLeavePiP);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     videoRef?.current?.addEventListener("waiting", handleBuffering);
     videoRef?.current?.addEventListener("stalled", handleNetworkError);
+    
+    
+    
     window.onbeforeunload = handleBeforeUnload;
 
     return () => {
@@ -309,6 +334,18 @@ function Video({
     }
     lastVolume.current=videoRef.current?.volume as number
     muteStatus.current=videoRef.current?.muted as boolean
+  }
+  const handleOnKeyDown=(e:KeyboardEvent)=>{
+    // console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+    if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+      seekStatus.current="keyboard";
+      console.log("Key-pressed");
+      console.log("seekStatus test",seekStatus.current);
+    }
+  }
+
+  if(videoRef.current){
+    videoRef.current.onkeydown=handleOnKeyDown;
   }
 
   return (
