@@ -33,6 +33,7 @@ interface myInfoType {
   array: Segment[];
   video_id: number;
   lastWatchedTime: number;
+  lastSubtitle:string;
 }
 function Video({
   video_id = 12,
@@ -65,6 +66,7 @@ function Video({
         array: [],
         video_id: video_id,
         lastWatchedTime: 0,
+        lastSubtitle:"no"
       }
     );
   };
@@ -122,7 +124,7 @@ function Video({
     );
 
     const index = previousPushedData.findIndex(
-      (item: { video_id: number; array: []; lastWatchedTime: number }) =>
+      (item: { video_id: number; array: []; lastWatchedTime: number;lastSubtitle:string }) =>
         item.video_id === video_id
     );
     if (index !== -1) {
@@ -161,10 +163,21 @@ function Video({
       ],
     };
 
+    
+
     console.log("Adding Segment: ", myInfo.current);
 
     if (videoRef.current) {
       console.log(videoRef.current.textTracks, "TEXTTRACKSSSSSSSS");
+      const tracks=videoRef.current.textTracks;
+      let lastSubtitleLocal="no";
+      for(let i=0;i<tracks.length;i++){
+        if(tracks[i].mode==='showing'){
+          lastSubtitleLocal=tracks[i].label;
+          break;
+        }
+      }
+      myInfo.current.lastSubtitle=lastSubtitleLocal;
     }
     myInfo.current.lastWatchedTime = lastWatched.current;
     startWatched.current = getCurrentTime() + 1;
@@ -304,6 +317,10 @@ function Video({
   const handleLoadedData = () => {
     if (videoRef.current && myInfo.current) {
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
+      const tracks=videoRef.current.textTracks;
+      for(let i=0;i<tracks.length;i++){
+        tracks[i].mode=tracks[i].label===myInfo.current.lastSubtitle?"showing":"disabled"
+      }
     }
     console.log(videoRef.current?.duration);
     setHeatMapArray(generateHeatmap());
@@ -335,6 +352,7 @@ function Video({
       console.log(screen_mode.current, "Set Screen Mode");
     };
     const handleBeforeUnload = () => {
+      
       addSegment();
     };
     const handleVisibilityChange = () => {
