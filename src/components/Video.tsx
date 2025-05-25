@@ -1,22 +1,45 @@
 import React, { useEffect, useRef } from "react";
 
 import Heatmap from "./Heatmap";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 interface videoProps {
   video_id?: number;
-  video_src?: string;
+  video_src?: { [key: string]: string };
   watchIntervalTime?: number;
   onTabChange?: {
     pause: boolean;
   };
 }
+
+interface Segment {
+  start: number;
+  end: number;
+  screen_mode: string;
+  current_volume: number;
+  isMuted: boolean;
+  seekByMouseOrKey: string;
+  subtitleLanguage: string;
+  playBackSpeed: number;
+  videoQuality: string;
+}
 interface myInfoType {
-  array: [];
+  array: Segment[];
   video_id: number;
   lastWatchedTime: number;
 }
 function Video({
   video_id = 12,
-  video_src = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+  video_src = {
+    "720p":
+      "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+  },
   watchIntervalTime = 30,
   onTabChange = { pause: false },
 }: videoProps) {
@@ -29,6 +52,8 @@ function Video({
   const lastVolume = useRef(1);
   const muteStatus = useRef(false);
   const seekStatus = useRef("noseeked");
+  const playBackSpeed = useRef(1);
+  const quality = useRef("720p");
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -112,13 +137,7 @@ function Video({
     if (startWatched.current >= lastWatched.current) {
       return;
     }
-    console.log("Adding Segment: ", {
-      start: startWatched.current,
-      end: lastWatched.current,
-      screen_mode: screen_mode.current,
-      current_volume: lastVolume.current,
-      isMuted: muteStatus.current,
-    });
+
     if (videoRef.current?.seeking && seekStatus.current === "noseeked") {
       seekStatus.current = "mouse";
     }
@@ -144,9 +163,14 @@ function Video({
           isMuted: muteStatus.current,
           seekByMouseOrKey: seekStatus.current,
           subtitleLanguage: subtitle,
+          playBackSpeed: playBackSpeed.current,
+          videoQuality: quality.current,
         },
       ],
     };
+
+    console.log("Adding Segment: ", myInfo.current);
+
     if (videoRef.current) {
       console.log(videoRef.current.textTracks, "TEXTTRACKSSSSSSSS");
     }
@@ -266,7 +290,6 @@ function Video({
   };
 
   useEffect(() => {
-    console.log("Dukese");
     const handleFullScreenChange = () => {
       addSegment();
       console.log(document.fullscreenElement, "FullScreenElemt");
@@ -349,41 +372,103 @@ function Video({
     videoRef.current.onkeydown = handleOnKeyDown;
   }
 
-  return (
-    <div>
-      <video
-        className="mb-4"
-        ref={videoRef}
-        src={video_src}
-        controls
-        onPlay={handlePlay}
-        onVolumeChange={handleVolumeChange}
-        onLoadedData={handleLoadedData}
-        onPause={handlePause}
-        onSeeking={handleSeeking}
-        onSeeked={handleSeeked}
-        onEnded={handleEnded}
-        onTimeUpdate={handleTimeUpdate}
-      >
-        <track
-          kind="subtitles"
-          src="/subtitles/subtitles-en.vtt"
-          srcLang="en"
-          label="English Subtitles"
-        />
+  const handleRateChange = () => {
+    addSegment();
+    playBackSpeed.current = videoRef.current?.playbackRate as number;
+    // console.log("Rate change", videoRef.current?.playbackRate);
+  };
 
-        <track
-          kind="subtitles"
-          src="/subtitles/subtitles-es.vtt"
-          srcLang="es"
-          label="Spanish Subtitles"
-        />
-      </video>
-      {HeatMapArray.length > 0 && <Heatmap pv={HeatMapArray} />}
-      <br />
-      <br />
-      {getUniqueWatchTime()}
-      {`   seconds unique Viewed by you`}
+  const handleQualityChange = (selectedQuality: string) => {
+    console.log(selectedQuality, "selectedQuality");
+
+    if (videoRef.current) {
+      addSegment();
+
+      const currentTime = videoRef.current.currentTime;
+      const isPlaying = !videoRef.current.paused;
+
+      videoRef.current.src = video_src[selectedQuality];
+
+      videoRef.current.onloadedmetadata = () => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = currentTime;
+          if (isPlaying) {
+            videoRef.current.play();
+          }
+        }
+      };
+
+      quality.current = selectedQuality;
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
+      <div className="flex flex-col items-center gap-4">
+        <video
+          style={{ width: "640px", height: "360px" }}
+          className="mb-2"
+          ref={videoRef}
+          src={video_src[quality.current]}
+          controls
+          onPlay={handlePlay}
+          onVolumeChange={handleVolumeChange}
+          onLoadedData={handleLoadedData}
+          onRateChange={handleRateChange}
+          onPause={handlePause}
+          onSeeking={handleSeeking}
+          onSeeked={handleSeeked}
+          onEnded={handleEnded}
+          onTimeUpdate={handleTimeUpdate}
+        >
+          <track
+            kind="subtitles"
+            src="/subtitles/subtitles-en.vtt"
+            srcLang="en"
+            label="English Subtitles"
+          />
+          <track
+            kind="subtitles"
+            src="/subtitles/subtitles-es.vtt"
+            srcLang="es"
+            label="Spanish Subtitles"
+          />
+        </video>
+
+        {/* Heatmap Under Video */}
+        <div className="w-[640px]">
+          {HeatMapArray.length > 0 ? (
+            <Heatmap pv={HeatMapArray} />
+          ) : (
+            <div className="h-20 bg-gray-200 flex items-center justify-center text-gray-600 text-sm">
+              No heatmap data
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Column: Quality + Unique Watch Time */}
+      <div className="flex flex-col items-start gap-4">
+        <Select
+          onValueChange={handleQualityChange}
+          defaultValue={quality.current}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Video quality" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.keys(video_src).map((quality) => (
+              <SelectItem key={quality} value={quality}>
+                {quality}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="text-gray-800 font-medium">
+          {getUniqueWatchTime()} seconds unique viewed by you
+        </div>
+      </div>
     </div>
   );
 }
