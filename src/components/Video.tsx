@@ -122,6 +122,8 @@ function Video({
       seekStatus.current = "mouse";
     }
 
+    console.log(videoRef.current?.textTracks)
+
     
 
     myInfo.current = {
@@ -246,7 +248,7 @@ function Video({
           console.log(`Track ${track.label} changed from ${prevMode} to ${track.mode}`);
           previousModeRef.current[track.label] = track.mode;
 
-          // Log active subtitle
+          
           const activeTrack = Array.from(tracks).find(t => t.mode === "showing");
           if (activeTrack) {
             subtitleRef.current=activeTrack.language;
@@ -308,6 +310,7 @@ function Video({
       console.log(screen_mode.current, "Set Screen Mode");
     };
     const handleBeforeUnload = () => {
+      
       addSegment();
     };
     const handleVisibilityChange = () => {
