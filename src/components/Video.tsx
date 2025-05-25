@@ -28,6 +28,7 @@ function Video({
   const screen_mode = useRef("normal");
   const lastVolume = useRef(1);
   const muteStatus = useRef(false);
+  const seekStatus = useRef("noseeked");
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -118,6 +119,18 @@ function Video({
       current_volume: lastVolume.current,
       isMuted: muteStatus.current,
     });
+    if (videoRef.current?.seeking && seekStatus.current === "noseeked") {
+      seekStatus.current = "mouse";
+    }
+
+    let subtitle = "no";
+    if (videoRef.current) {
+      for (let i = 0; i < videoRef.current.textTracks.length; i++) {
+        if (videoRef.current.textTracks[i].mode === "showing") {
+          subtitle = videoRef.current.textTracks[i].language;
+        }
+      }
+    }
 
     myInfo.current = {
       ...myInfo.current,
@@ -129,12 +142,18 @@ function Video({
           screen_mode: screen_mode.current,
           current_volume: lastVolume.current,
           isMuted: muteStatus.current,
+          seekByMouseOrKey: seekStatus.current,
+          subtitleLanguage: subtitle,
         },
       ],
     };
+    if (videoRef.current) {
+      console.log(videoRef.current.textTracks, "TEXTTRACKSSSSSSSS");
+    }
     myInfo.current.lastWatchedTime = lastWatched.current;
     startWatched.current = getCurrentTime() + 1;
     lastWatched.current = getCurrentTime() + 1;
+    seekStatus.current = "noseeked";
     setDataToLocalStorageFromAddSegment();
   };
 
@@ -186,6 +205,7 @@ function Video({
   const handlePause = () => {
     isPlaying.current = false;
     console.log("Video paused at time:", getCurrentTime());
+
     addSegment();
   };
 
@@ -197,6 +217,10 @@ function Video({
       getCurrentTime() > lastWatched.current &&
       lastWatched.current - startWatched.current >= 1
     ) {
+      // console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+      if (seekStatus.current === "noseeked") {
+        seekStatus.current = "mouse";
+      }
       addSegment();
     }
 
@@ -206,7 +230,7 @@ function Video({
   const handleSeeked = () => {
     // isPlaying.current = false;
     console.log("Seeked to time:", getCurrentTime());
-
+    console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
     startWatched.current = getCurrentTime() + 1;
     lastWatched.current = getCurrentTime() + 1;
   };
@@ -286,12 +310,14 @@ function Video({
       addSegment();
       console.log("Network Error");
     };
+
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("enterpictureinpicture", handleEnterPiP);
     document.addEventListener("leavepictureinpicture", handleLeavePiP);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     videoRef?.current?.addEventListener("waiting", handleBuffering);
     videoRef?.current?.addEventListener("stalled", handleNetworkError);
+
     window.onbeforeunload = handleBeforeUnload;
 
     return () => {
@@ -310,6 +336,18 @@ function Video({
     lastVolume.current = videoRef.current?.volume as number;
     muteStatus.current = videoRef.current?.muted as boolean;
   };
+  const handleOnKeyDown = (e: KeyboardEvent) => {
+    console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      seekStatus.current = "keyboard";
+      console.log("Key-pressed");
+      console.log("seekStatus test", seekStatus.current);
+    }
+  };
+
+  if (videoRef.current) {
+    videoRef.current.onkeydown = handleOnKeyDown;
+  }
 
   return (
     <div>
@@ -326,7 +364,21 @@ function Video({
         onSeeked={handleSeeked}
         onEnded={handleEnded}
         onTimeUpdate={handleTimeUpdate}
-      />
+      >
+        <track
+          kind="subtitles"
+          src="/subtitles/subtitles-en.vtt"
+          srcLang="en"
+          label="English Subtitles"
+        />
+
+        <track
+          kind="subtitles"
+          src="/subtitles/subtitles-es.vtt"
+          srcLang="es"
+          label="Spanish Subtitles"
+        />
+      </video>
       {HeatMapArray.length > 0 && <Heatmap pv={HeatMapArray} />}
       <br />
       <br />
