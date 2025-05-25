@@ -4,10 +4,9 @@ import Video from "./components/Video";
 
 function App() {
   const videoSources = {
-    "140p": "video/BigBuckBunny_140p.mp4",
-    "480p": "video/BigBuckBunny_480p.mp4",
-    "720p": "video/BigBuckBunny_720p.mp4",
-    "1080p": "video/BigBuckBunny_1080p.mp4",
+    "140p": "video/v2.mp4",
+
+    "480p": "video/v1.mp4",
   };
   return (
     <>

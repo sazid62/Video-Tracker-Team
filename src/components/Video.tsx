@@ -429,7 +429,7 @@ function Video({
           style={{ width: "640px", height: "360px" }}
           className="mb-2"
           ref={videoRef}
-          src={video_src[quality.current]}
+          src={video_src[Object.keys(video_src)[0]]}
           controls
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
@@ -471,7 +471,7 @@ function Video({
       <div className="flex flex-col items-start gap-4">
         <Select
           onValueChange={handleQualityChange}
-          defaultValue={quality.current}
+          defaultValue={Object.keys(video_src)[0]}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Video quality" />
