@@ -21,7 +21,7 @@ function Video({
   onTabChange = { pause: false },
 }: videoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-
+  const previousModeRef = useRef<Record<string, string>>({});
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
   const isPlaying = useRef(false);
@@ -29,6 +29,7 @@ function Video({
   const lastVolume = useRef(1);
   const muteStatus = useRef(false);
   const seekStatus = useRef("noseeked");
+  const subtitleRef=useRef("no");
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -121,14 +122,7 @@ function Video({
       seekStatus.current = "mouse";
     }
 
-    let subtitle="no";
-    if(videoRef.current){
-      for(let i=0;i<videoRef.current.textTracks.length;i++){
-        if(videoRef.current.textTracks[i].mode==="showing"){
-          subtitle=videoRef.current.textTracks[i].language;
-        }
-      }
-    }
+    
 
     myInfo.current = {
       ...myInfo.current,
@@ -141,7 +135,7 @@ function Video({
           current_volume: lastVolume.current,
           isMuted: muteStatus.current,
           seekByMouseOrKey: seekStatus.current,
-          subtitleLanguage:subtitle
+          subtitleLanguage:subtitleRef.current
         },
       ],
     };
@@ -241,6 +235,30 @@ function Video({
 
   const handleTimeUpdate = () => {
     // console.log(screen_mode.current);
+
+    if (videoRef.current) {
+      const tracks = videoRef.current.textTracks;
+      for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+        const prevMode = previousModeRef.current[track.label];
+        if (prevMode !== track.mode) {
+          addSegment();
+          console.log(`Track ${track.label} changed from ${prevMode} to ${track.mode}`);
+          previousModeRef.current[track.label] = track.mode;
+
+          // Log active subtitle
+          const activeTrack = Array.from(tracks).find(t => t.mode === "showing");
+          if (activeTrack) {
+            subtitleRef.current=activeTrack.language;
+            console.log(`Active subtitle: ${activeTrack.label}`);
+          } else {
+            subtitleRef.current="no";
+            console.log("No subtitles active");
+          }
+        }
+      }
+    }
+    
     if (!videoRef.current?.seeking) {
       lastWatched.current = getCurrentTime();
       // console.log(startWatched.current, lastWatched.current, isPlaying.current);
@@ -374,7 +392,7 @@ function Video({
           kind="subtitles"
           src="/subtitles/subtitles-es.vtt"
           srcLang="es"
-          
+
           label="Spanish Subtitles"
         />
       </video>
