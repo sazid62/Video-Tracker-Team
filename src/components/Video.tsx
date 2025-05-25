@@ -54,7 +54,7 @@ function Video({
   const seekStatus = useRef("noseeked");
   const subtitleRef = useRef("no");
   const playBackSpeed = useRef(1);
-  const quality = useRef("720p");
+  const quality = useRef(Object.keys(video_src)[0]);
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
