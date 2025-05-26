@@ -4,6 +4,8 @@ import {
   MediaPlayer,
   MediaPlayerInstance,
   MediaProvider,
+  useMediaContext,
+  
 } from "@vidstack/react";
 import {
   DefaultVideoLayout,
@@ -156,8 +158,16 @@ function Video({
     if (startWatched.current >= lastWatched.current) {
       return;
     }
+    seekStatus.current="noseeked";
+    console.log(videoRef.current);
+    console.log(videoRef.current?.state.lastKeyboardAction,"gooooooooooooooooooood");
+    if(videoRef.current?.state.lastKeyboardAction?.action==='seekForward'||videoRef.current?.state.lastKeyboardAction?.action==='seekBackward'){
+      seekStatus.current="keyboard";
+      videoRef.current.state.lastKeyboardAction.action='No';
+    }
+    
 
-    if (videoRef.current?.seeking && seekStatus.current === "noseeked") {
+    if (videoRef.current?.state.seeking && seekStatus.current === "noseeked") {
       seekStatus.current = "mouse";
     }
 
@@ -288,7 +298,7 @@ function Video({
     // console.log(screen_mode.current);
 
     if (videoRef.current) {
-      const tracks = videoRef.current.textTracks;
+      const tracks = videoRef.current.state.textTracks;
       for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i];
         const prevMode = previousModeRef.current[track.label];
@@ -314,7 +324,8 @@ function Video({
       }
     }
 
-    if (!videoRef.current?.seeking) {
+    if (!videoRef.current?.state.seeking) {
+      
       lastWatched.current = getCurrentTime();
       // console.log(startWatched.current, lastWatched.current, isPlaying.current);
       if (
@@ -331,7 +342,7 @@ function Video({
   const handleLoadedData = () => {
     if (videoRef.current && myInfo.current) {
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
-      const tracks = videoRef.current.textTracks;
+      const tracks = videoRef.current.state.textTracks;
       for (let i = 0; i < tracks.length; i++) {
         tracks[i].mode =
           tracks[i].label === myInfo.current.lastSubtitle
@@ -388,12 +399,21 @@ function Video({
       console.log("Network Error");
     };
 
+    const handleOnKeyDown = (e: KeyboardEvent) => {
+      console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        seekStatus.current = "keyboard";
+        console.log("Key-pressed");
+        console.log("seekStatus test", seekStatus.current);
+      }
+    };
+
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("enterpictureinpicture", handleEnterPiP);
     document.addEventListener("leavepictureinpicture", handleLeavePiP);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     videoRef?.current?.addEventListener("waiting", handleBuffering);
-    videoRef?.current?.addEventListener("stalled", handleNetworkError);
+    videoRef?.current?.addEventListener("stalled", handleNetworkError); 
 
     window.onbeforeunload = handleBeforeUnload;
 
@@ -413,18 +433,6 @@ function Video({
     lastVolume.current = videoRef.current?.volume as number;
     muteStatus.current = videoRef.current?.muted as boolean;
   };
-  const handleOnKeyDown = (e: KeyboardEvent) => {
-    console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-      seekStatus.current = "keyboard";
-      console.log("Key-pressed");
-      console.log("seekStatus test", seekStatus.current);
-    }
-  };
-
-  if (videoRef.current) {
-    videoRef.current.onkeydown = handleOnKeyDown;
-  }
 
   const handleRateChange = () => {
     addSegment();
@@ -441,19 +449,21 @@ function Video({
       const currentTime = videoRef.current.currentTime;
       const isPlaying = !videoRef.current.paused;
 
-      videoRef.current.src = video_src[selectedQuality];
+      videoRef.current.state.source.src = video_src[selectedQuality];
 
-      videoRef.current.onloadedmetadata = () => {
-        if (videoRef.current) {
-          videoRef.current.currentTime = currentTime;
-          if (isPlaying) {
-            videoRef.current.play();
-          }
+      if (videoRef.current) {
+        videoRef.current.currentTime = videoRef.current.currentTime;
+        if (isPlaying) {
+          videoRef.current.play();
         }
-      };
+      }
 
       quality.current = selectedQuality;
     }
+  };
+
+  const handleOnLoadedMetaData = () => {
+    
   };
 
   return (
@@ -462,12 +472,34 @@ function Video({
         <MediaPlayer
           ref={videoRef}
           // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-          src={video_src[Object.keys(video_src)[0]]}
+          // src={video_src[Object.keys(video_src)[0]]}
+          src={[
+            {
+              src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
+              type: "video/mp4",
+              width: 1920,
+              height: 1080,
+            },
+            {
+              src: "https://files.vidstack.io/sprite-fight/720p.mp4",
+              type: "video/mp4",
+              width: 1280,
+              height: 720,
+            },
+            {
+              src: "https://files.vidstack.io/sprite-fight/480p.mp4",
+              type: "video/mp4",
+              width: 853,
+              height: 480,
+            },
+          ]}
           style={{ width: "640px", height: "360px" }}
           className="mb-2"
           
+          // onKeyDown={(e)=>{console.log("Down")}}
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
+          onLoadedMetadata={handleOnLoadedMetaData}
           onLoadedData={handleLoadedData}
           onRateChange={handleRateChange}
           onPause={handlePause}
@@ -475,7 +507,7 @@ function Video({
           onSeeked={handleSeeked}
           onEnded={handleEnded}
           onTimeUpdate={handleTimeUpdate}
-          // playsInline
+          playsInline
         >
           <MediaProvider>
             <track
@@ -483,6 +515,7 @@ function Video({
               src="/subtitles/subtitles-es.vtt"
               srcLang="es"
               label="Spanish Subtitles"
+              
             />
             <track
               kind="subtitles"
@@ -491,7 +524,7 @@ function Video({
               label="English Subtitles"
             />
           </MediaProvider>
-          <DefaultVideoLayout icons={defaultLayoutIcons} />
+          <DefaultVideoLayout  icons={defaultLayoutIcons} />
         </MediaPlayer>
         <div className="w-[640px]">
           {HeatMapArray.length > 0 ? (
