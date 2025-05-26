@@ -1,6 +1,7 @@
 import "./App.css";
 
-import Video from "./components/Video";
+// import Video from "./components/Video";
+import Video from "./components/vid_player/Video";
 
 function App() {
   const videoSources = {
@@ -10,6 +11,14 @@ function App() {
   };
   return (
     <>
+      {/* <Video
+        video_id={15}
+        video_src={videoSources}
+        watchIntervalTime={5}
+        onTabChange={{
+          pause: true,
+        }}
+      /> */}
       <Video
         video_id={15}
         video_src={videoSources}
