@@ -9,6 +9,7 @@ import {
   MediaPlayer,
   MediaPlayerInstance,
   MediaProvider,
+  useMediaContext,
 } from "@vidstack/react";
 import {
   DefaultVideoLayout,
@@ -489,6 +490,8 @@ function Video({
     video_Quality.current = quality?.id || "auto";
   };
 
+  const handleOnLoadedMetaData = () => {};
+
   return (
     <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
       <div>
@@ -523,6 +526,7 @@ function Video({
           onQualityChange={handleQualityChange}
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
+          onLoadedMetadata={handleOnLoadedMetaData}
           onLoadedData={handleLoadedData}
           onRateChange={handleRateChange}
           onPause={handlePause}
@@ -539,7 +543,6 @@ function Video({
               src="/subtitles/subtitles-es.vtt"
               srcLang="es"
               label="Spanish Subtitles"
-              default
             />
             <track
               kind="subtitles"
