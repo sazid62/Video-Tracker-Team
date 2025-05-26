@@ -465,7 +465,7 @@ function Video({
           ref={videoRef}
           // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
           // src={video_src[Object.keys(video_src)[0]]}
-          style={{ width: "1920px", height: "1080px" }}
+          style={{ width: "720px", height: "720px" }}
           src={[
             {
               src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -520,7 +520,7 @@ function Video({
           </MediaProvider>
           <DefaultVideoLayout  icons={defaultLayoutIcons} />
         </MediaPlayer>
-        <div className=" " style={{ width: "1920px" }}>
+        <div className=" " style={{ width: "720px" }}>
           {HeatMapArray.length > 0 ? (
             <Heatmap pv={HeatMapArray} />
           ) : (
