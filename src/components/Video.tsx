@@ -336,7 +336,7 @@ function Video({
         localStorage.getItem("stayTime") || "1"
       );
     }
-    setHeatMapArray(generateHeatmap());
+    // setHeatMapArray(generateHeatmap());
   };
   const activeTimeIntervalRef = useRef<NodeJS.Timeout>(undefined);
   const startCountingPageStayTime = () => {
