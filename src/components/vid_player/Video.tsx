@@ -1,6 +1,11 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
 import {
+  type MediaQualitiesChangeEvent,
+  type MediaQualityChangeEvent,
+  type VideoQuality,
+} from "@vidstack/react";
+import {
   MediaPlayer,
   MediaPlayerInstance,
   MediaProvider,
@@ -69,7 +74,7 @@ function Video({
   const seekStatus = useRef("noseeked");
   const subtitleRef = useRef("no");
   const playBackSpeed = useRef(1);
-  const quality = useRef(Object.keys(video_src)[0]);
+  const video_Quality = useRef("auto");
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -158,14 +163,18 @@ function Video({
     if (startWatched.current >= lastWatched.current) {
       return;
     }
-    seekStatus.current="noseeked";
-    console.log(videoRef.current);
-    console.log(videoRef.current?.state.lastKeyboardAction,"gooooooooooooooooooood");
-    if(videoRef.current?.state.lastKeyboardAction?.action==='seekForward'||videoRef.current?.state.lastKeyboardAction?.action==='seekBackward'){
-      seekStatus.current="keyboard";
-      videoRef.current.state.lastKeyboardAction.action='No';
+    seekStatus.current = "noseeked";
+    console.log(
+      videoRef.current?.state.lastKeyboardAction,
+      "gooooooooooooooooooood"
+    );
+    if (
+      videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
+      videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
+    ) {
+      seekStatus.current = "keyboard";
+      videoRef.current.state.lastKeyboardAction.action = "No";
     }
-    
 
     if (videoRef.current?.state.seeking && seekStatus.current === "noseeked") {
       seekStatus.current = "mouse";
@@ -184,7 +193,7 @@ function Video({
           seekByMouseOrKey: seekStatus.current,
           subtitleLanguage: subtitleRef.current,
           playBackSpeed: playBackSpeed.current,
-          videoQuality: quality.current,
+          videoQuality: video_Quality.current,
         },
       ],
     };
@@ -440,26 +449,9 @@ function Video({
     // console.log("Rate change", videoRef.current?.playbackRate);
   };
 
-  const handleQualityChange = (selectedQuality: string) => {
-    console.log(selectedQuality, "selectedQuality");
-
-    if (videoRef.current) {
-      addSegment();
-
-      const currentTime = videoRef.current.currentTime;
-      const isPlaying = !videoRef.current.paused;
-
-      videoRef.current.state.source.src = video_src[selectedQuality];
-
-      if (videoRef.current) {
-        videoRef.current.currentTime = videoRef.current.currentTime;
-        if (isPlaying) {
-          videoRef.current.play();
-        }
-      }
-
-      quality.current = selectedQuality;
-    }
+  const handleQualityChange = (quality: VideoQuality | null) => {
+    addSegment();
+    video_Quality.current = quality?.id || "auto";
   };
 
   const handleOnLoadedMetaData = () => {
@@ -473,6 +465,7 @@ function Video({
           ref={videoRef}
           // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
           // src={video_src[Object.keys(video_src)[0]]}
+          style={{ width: "1920px", height: "1080px" }}
           src={[
             {
               src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -487,16 +480,16 @@ function Video({
               height: 720,
             },
             {
-              src: "https://files.vidstack.io/sprite-fight/480p.mp4",
+              src: "https://files.vidstack.io/sprite-fight/240p.mp4",
               type: "video/mp4",
-              width: 853,
-              height: 480,
+              width: 320,
+              height: 240,
             },
           ]}
-          style={{ width: "640px", height: "360px" }}
           className="mb-2"
-          
           // onKeyDown={(e)=>{console.log("Down")}}
+
+          onQualityChange={handleQualityChange}
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
           onLoadedMetadata={handleOnLoadedMetaData}
@@ -507,9 +500,10 @@ function Video({
           onSeeked={handleSeeked}
           onEnded={handleEnded}
           onTimeUpdate={handleTimeUpdate}
-          playsInline
+          playsInline={false}
         >
           <MediaProvider>
+            ;
             <track
               kind="subtitles"
               src="/subtitles/subtitles-es.vtt"
@@ -526,7 +520,7 @@ function Video({
           </MediaProvider>
           <DefaultVideoLayout  icons={defaultLayoutIcons} />
         </MediaPlayer>
-        <div className="w-[640px]">
+        <div className=" " style={{ width: "1920px" }}>
           {HeatMapArray.length > 0 ? (
             <Heatmap pv={HeatMapArray} />
           ) : (
@@ -537,22 +531,6 @@ function Video({
         </div>
       </div>
       <div className="flex flex-col items-start gap-4">
-        <Select
-          onValueChange={handleQualityChange}
-          defaultValue={Object.keys(video_src)[0]}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Video quality" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.keys(video_src).map((quality) => (
-              <SelectItem key={quality} value={quality}>
-                {quality}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         <div className="text-gray-800 font-medium">
           {getUniqueWatchTime()} seconds unique viewed by you
         </div>
