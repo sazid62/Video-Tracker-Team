@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import Heatmap from "./Heatmap";
 import {
@@ -33,7 +33,8 @@ interface myInfoType {
   array: Segment[];
   video_id: number;
   lastWatchedTime: number;
-  lastSubtitle:string;
+  videoQuality: string;
+  lastSubtitle: string;
 }
 function Video({
   video_id = 12,
@@ -55,7 +56,7 @@ function Video({
   const seekStatus = useRef("noseeked");
   const subtitleRef = useRef("no");
   const playBackSpeed = useRef(1);
-  const quality = useRef(Object.keys(video_src)[0]);
+  const quality = useRef(Object.keys(video_src)[0] || "720p");
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -66,7 +67,7 @@ function Video({
         array: [],
         video_id: video_id,
         lastWatchedTime: 0,
-        lastSubtitle:"no"
+        lastSubtitle: "no",
       }
     );
   };
@@ -124,8 +125,12 @@ function Video({
     );
 
     const index = previousPushedData.findIndex(
-      (item: { video_id: number; array: []; lastWatchedTime: number;lastSubtitle:string }) =>
-        item.video_id === video_id
+      (item: {
+        video_id: number;
+        array: [];
+        lastWatchedTime: number;
+        lastSubtitle: string;
+      }) => item.video_id === video_id
     );
     if (index !== -1) {
       previousPushedData[index] = myInfo.current;
@@ -163,21 +168,19 @@ function Video({
       ],
     };
 
-    
-
     console.log("Adding Segment: ", myInfo.current);
 
     if (videoRef.current) {
       console.log(videoRef.current.textTracks, "TEXTTRACKSSSSSSSS");
-      const tracks=videoRef.current.textTracks;
-      let lastSubtitleLocal="no";
-      for(let i=0;i<tracks.length;i++){
-        if(tracks[i].mode==='showing'){
-          lastSubtitleLocal=tracks[i].label;
+      const tracks = videoRef.current.textTracks;
+      let lastSubtitleLocal = "no";
+      for (let i = 0; i < tracks.length; i++) {
+        if (tracks[i].mode === "showing") {
+          lastSubtitleLocal = tracks[i].label;
           break;
         }
       }
-      myInfo.current.lastSubtitle=lastSubtitleLocal;
+      myInfo.current.lastSubtitle = lastSubtitleLocal;
     }
     myInfo.current.lastWatchedTime = lastWatched.current;
     startWatched.current = getCurrentTime() + 1;
@@ -311,21 +314,42 @@ function Video({
       }
     }
 
-    setHeatMapArray(generateHeatmap());
+    // setHeatMapArray(generateHeatmap());
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
+  // const [activeTimeOnPageRef ,  setActiveTimeOnPage] = useState(0);
+  const activeTimeOnPageRef = useRef(0);
   const handleLoadedData = () => {
     if (videoRef.current && myInfo.current) {
+      quality.current = myInfo.current.videoQuality;
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
-      const tracks=videoRef.current.textTracks;
-      for(let i=0;i<tracks.length;i++){
-        tracks[i].mode=tracks[i].label===myInfo.current.lastSubtitle?"showing":"disabled"
+      const tracks = videoRef.current.textTracks;
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode =
+          tracks[i].label === myInfo.current.lastSubtitle
+            ? "showing"
+            : "disabled";
       }
-    }
-    console.log(videoRef.current?.duration);
-    setHeatMapArray(generateHeatmap());
-  };
 
+      // setActiveTimeOnPage(parseInt(localStorage.getItem("stayTime") || "1"));
+      activeTimeOnPageRef.current = parseInt(
+        localStorage.getItem("stayTime") || "1"
+      );
+    }
+    // setHeatMapArray(generateHeatmap());
+  };
+  const activeTimeIntervalRef = useRef<NodeJS.Timeout>(undefined);
+  const startCountingPageStayTime = () => {
+    if (activeTimeIntervalRef.current)
+      clearInterval(activeTimeIntervalRef.current);
+
+    activeTimeIntervalRef.current = setInterval(() => {
+      // setActiveTimeOnPage((prev) => prev + 1);
+      activeTimeOnPageRef.current += 1;
+      // console.log("activeTimeOnPageRef", activeTimeOnPageRef.current);
+      localStorage.setItem("stayTime", activeTimeOnPageRef.current.toString());
+    }, 1000);
+  };
   useEffect(() => {
     const handleFullScreenChange = () => {
       addSegment();
@@ -352,15 +376,22 @@ function Video({
       console.log(screen_mode.current, "Set Screen Mode");
     };
     const handleBeforeUnload = () => {
-      
       addSegment();
+      localStorage.setItem("stayTime", activeTimeOnPageRef.current.toString());
+      if (activeTimeIntervalRef.current)
+        clearInterval(activeTimeIntervalRef.current);
     };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         if (videoRef?.current) {
           console.log(onTabChange);
           if (onTabChange.pause) videoRef?.current.pause();
         }
+        if (activeTimeIntervalRef.current)
+          clearInterval(activeTimeIntervalRef.current);
+      } else {
+        startCountingPageStayTime();
       }
     };
     const handleBuffering = () => {
@@ -371,7 +402,23 @@ function Video({
       addSegment();
       console.log("Network Error");
     };
+    const handleLoadedData = () => {
+      startCountingPageStayTime();
+    };
 
+    const handleFocus = () => {
+      console.log("FOCUS");
+      startCountingPageStayTime();
+    };
+
+    const handleBlur = () => {
+      console.log("HandleBLUR");
+      clearInterval(activeTimeIntervalRef.current);
+    };
+    // window.focus = handleFocus;
+    // window.blur = handleBlur;
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("enterpictureinpicture", handleEnterPiP);
     document.addEventListener("leavepictureinpicture", handleLeavePiP);
@@ -380,8 +427,11 @@ function Video({
     videoRef?.current?.addEventListener("stalled", handleNetworkError);
 
     window.onbeforeunload = handleBeforeUnload;
+    window.onload = handleLoadedData;
 
     return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
       videoRef?.current?.removeEventListener("waiting", handleBuffering);
       videoRef?.current?.removeEventListener("stalled", handleNetworkError);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -390,6 +440,8 @@ function Video({
       document.removeEventListener("leavepictureinpicture", handleLeavePiP);
     };
   }, []);
+
+  console.log("Relaod");
   const handleVolumeChange = () => {
     if (isPlaying.current) {
       addSegment();
@@ -448,7 +500,6 @@ function Video({
           className="mb-2"
           ref={videoRef}
           src={video_src[Object.keys(video_src)[0]]}
-          
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
           onLoadedData={handleLoadedData}
@@ -485,11 +536,10 @@ function Video({
         </div>
       </div>
 
-      {/* Right Column: Quality + Unique Watch Time */}
       <div className="flex flex-col items-start gap-4">
         <Select
           onValueChange={handleQualityChange}
-          defaultValue={Object.keys(video_src)[0]}
+          defaultValue={quality.current}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Video quality" />
@@ -503,8 +553,11 @@ function Video({
           </SelectContent>
         </Select>
 
-        <div className="text-gray-800 font-medium">
+        <div className="text-blue-800 font-medium">
           {getUniqueWatchTime()} seconds unique viewed by you
+        </div>
+        <div className="text-red-800 font-medium">
+          {activeTimeOnPageRef.current} seconds active on this page
         </div>
       </div>
     </div>
