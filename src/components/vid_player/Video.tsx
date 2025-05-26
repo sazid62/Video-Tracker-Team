@@ -1,6 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-
-import Heatmap from "./Heatmap";
+import "@vidstack/react/player/styles/default/theme.css";
+import "@vidstack/react/player/styles/default/layouts/video.css";
+import {
+  MediaPlayer,
+  MediaPlayerInstance,
+  MediaProvider,
+} from "@vidstack/react";
+import {
+  DefaultVideoLayout,
+  defaultLayoutIcons,
+} from "@vidstack/react/player/layouts/default";
+import React, { useRef, useEffect } from "react";
+import Heatmap from "../Heatmap";
 import {
   Select,
   SelectContent,
@@ -33,9 +43,9 @@ interface myInfoType {
   array: Segment[];
   video_id: number;
   lastWatchedTime: number;
-  videoQuality: string;
   lastSubtitle: string;
 }
+
 function Video({
   video_id = 12,
   video_src = {
@@ -45,7 +55,8 @@ function Video({
   watchIntervalTime = 30,
   onTabChange = { pause: false },
 }: videoProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<MediaPlayerInstance>(null);
+  // const videoRef = useRef<HTMLVideoElement>(null);
   const previousModeRef = useRef<Record<string, string>>({});
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
@@ -56,7 +67,7 @@ function Video({
   const seekStatus = useRef("noseeked");
   const subtitleRef = useRef("no");
   const playBackSpeed = useRef(1);
-  const quality = useRef(Object.keys(video_src)[0] || "720p");
+  const quality = useRef(Object.keys(video_src)[0]);
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -314,14 +325,11 @@ function Video({
       }
     }
 
-    // setHeatMapArray(generateHeatmap());
+    setHeatMapArray(generateHeatmap());
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
-  // const [activeTimeOnPageRef ,  setActiveTimeOnPage] = useState(0);
-  const activeTimeOnPageRef = useRef(0);
   const handleLoadedData = () => {
     if (videoRef.current && myInfo.current) {
-      quality.current = myInfo.current.videoQuality;
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
       const tracks = videoRef.current.textTracks;
       for (let i = 0; i < tracks.length; i++) {
@@ -330,15 +338,12 @@ function Video({
             ? "showing"
             : "disabled";
       }
-
-      // setActiveTimeOnPage(parseInt(localStorage.getItem("stayTime") || "1"));
-      activeTimeOnPageRef.current = parseInt(
-        localStorage.getItem("stayTime") || "1"
-      );
     }
+    console.log(videoRef.current?.duration);
     setHeatMapArray(generateHeatmap());
   };
   const activeTimeIntervalRef = useRef<NodeJS.Timeout>(undefined);
+  const activeTimeOnPageRef = useRef<number>(0);
   const startCountingPageStayTime = () => {
     if (activeTimeIntervalRef.current)
       clearInterval(activeTimeIntervalRef.current);
@@ -440,8 +445,6 @@ function Video({
       document.removeEventListener("leavepictureinpicture", handleLeavePiP);
     };
   }, []);
-
-  console.log("Relaod");
   const handleVolumeChange = () => {
     if (isPlaying.current) {
       addSegment();
@@ -494,12 +497,13 @@ function Video({
 
   return (
     <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
-      <div className="flex flex-col items-center gap-4">
-        <video
+      <div>
+        <MediaPlayer
+          ref={videoRef}
+          // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "640px", height: "360px" }}
           className="mb-2"
-          ref={videoRef}
-          src={video_src[Object.keys(video_src)[0]]}
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
           onLoadedData={handleLoadedData}
@@ -509,22 +513,24 @@ function Video({
           onSeeked={handleSeeked}
           onEnded={handleEnded}
           onTimeUpdate={handleTimeUpdate}
+          // playsInline
         >
-          <track
-            kind="subtitles"
-            src="/subtitles/subtitles-en.vtt"
-            srcLang="en"
-            label="English Subtitles"
-          />
-          <track
-            kind="subtitles"
-            src="/subtitles/subtitles-es.vtt"
-            srcLang="es"
-            label="Spanish Subtitles"
-          />
-        </video>
-
-        {/* Heatmap Under Video */}
+          <MediaProvider>
+            <track
+              kind="subtitles"
+              src="/subtitles/subtitles-es.vtt"
+              srcLang="es"
+              label="Spanish Subtitles"
+            />
+            <track
+              kind="subtitles"
+              src="/subtitles/subtitles-en.vtt"
+              srcLang="en"
+              label="English Subtitles"
+            />
+          </MediaProvider>
+          <DefaultVideoLayout icons={defaultLayoutIcons} />
+        </MediaPlayer>
         <div className="w-[640px]">
           {HeatMapArray.length > 0 ? (
             <Heatmap pv={HeatMapArray} />
@@ -535,11 +541,10 @@ function Video({
           )}
         </div>
       </div>
-
       <div className="flex flex-col items-start gap-4">
         <Select
           onValueChange={handleQualityChange}
-          defaultValue={quality.current}
+          defaultValue={Object.keys(video_src)[0]}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Video quality" />
@@ -553,7 +558,7 @@ function Video({
           </SelectContent>
         </Select>
 
-        <div className="text-blue-800 font-medium">
+        <div className="text-gray-800 font-medium">
           {getUniqueWatchTime()} seconds unique viewed by you
         </div>
         <div className="text-red-800 font-medium">
