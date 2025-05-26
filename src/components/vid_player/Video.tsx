@@ -9,6 +9,8 @@ import {
   MediaPlayer,
   MediaPlayerInstance,
   MediaProvider,
+  useMediaContext,
+  
 } from "@vidstack/react";
 import {
   DefaultVideoLayout,
@@ -332,6 +334,7 @@ function Video({
     }
 
     if (!videoRef.current?.state.seeking) {
+      
       lastWatched.current = getCurrentTime();
       // console.log(startWatched.current, lastWatched.current, isPlaying.current);
       if (
@@ -419,7 +422,7 @@ function Video({
     document.addEventListener("leavepictureinpicture", handleLeavePiP);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     videoRef?.current?.addEventListener("waiting", handleBuffering);
-    videoRef?.current?.addEventListener("stalled", handleNetworkError);
+    videoRef?.current?.addEventListener("stalled", handleNetworkError); 
 
     window.onbeforeunload = handleBeforeUnload;
 
@@ -451,6 +454,10 @@ function Video({
     video_Quality.current = quality?.id || "auto";
   };
 
+  const handleOnLoadedMetaData = () => {
+    
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
       <div>
@@ -458,7 +465,7 @@ function Video({
           ref={videoRef}
           // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
           // src={video_src[Object.keys(video_src)[0]]}
-          style={{ width: "1920px", height: "1080px" }}
+          style={{ width: "720px", height: "720px" }}
           src={[
             {
               src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -485,6 +492,7 @@ function Video({
           onQualityChange={handleQualityChange}
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
+          onLoadedMetadata={handleOnLoadedMetaData}
           onLoadedData={handleLoadedData}
           onRateChange={handleRateChange}
           onPause={handlePause}
@@ -501,7 +509,7 @@ function Video({
               src="/subtitles/subtitles-es.vtt"
               srcLang="es"
               label="Spanish Subtitles"
-              default
+              
             />
             <track
               kind="subtitles"
@@ -510,9 +518,9 @@ function Video({
               label="English Subtitles"
             />
           </MediaProvider>
-          <DefaultVideoLayout icons={defaultLayoutIcons} />
+          <DefaultVideoLayout  icons={defaultLayoutIcons} />
         </MediaPlayer>
-        <div className=" " style={{ width: "1920px" }}>
+        <div className=" " style={{ width: "720px" }}>
           {HeatMapArray.length > 0 ? (
             <Heatmap pv={HeatMapArray} />
           ) : (
