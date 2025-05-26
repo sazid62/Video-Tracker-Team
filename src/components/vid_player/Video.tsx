@@ -14,7 +14,7 @@ import {
   DefaultVideoLayout,
   defaultLayoutIcons,
 } from "@vidstack/react/player/layouts/default";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Heatmap from "../Heatmap";
 import {
   Select,
@@ -73,6 +73,7 @@ function Video({
   const subtitleRef = useRef("no");
   const playBackSpeed = useRef(1);
   const video_Quality = useRef("auto");
+  const activeTimeOnPageRef = useRef(0);
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -345,6 +346,7 @@ function Video({
     setHeatMapArray(generateHeatmap());
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
+
   const handleLoadedData = () => {
     if (videoRef.current && myInfo.current) {
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
@@ -356,10 +358,28 @@ function Video({
             : "disabled";
       }
     }
+
+    startCountingPageStayTime();
     console.log(videoRef.current?.duration);
+    activeTimeOnPageRef.current = parseInt(
+      localStorage.getItem("stayTime") || "1"
+    );
     setHeatMapArray(generateHeatmap());
   };
+  const activeTimeIntervalRef = useRef<NodeJS.Timeout>(undefined);
+  const [pageStayTime, setPageStayTime] = useState(0);
+  const startCountingPageStayTime = () => {
+    if (activeTimeIntervalRef.current)
+      clearInterval(activeTimeIntervalRef.current);
 
+    activeTimeIntervalRef.current = setInterval(() => {
+      // setActiveTimeOnPage((prev) => prev + 1);
+      activeTimeOnPageRef.current += 1;
+      // console.log("activeTimeOnPageRef", activeTimeOnPageRef.current);
+      setPageStayTime(activeTimeOnPageRef.current);
+      localStorage.setItem("stayTime", activeTimeOnPageRef.current.toString());
+    }, 1000);
+  };
   useEffect(() => {
     const handleFullScreenChange = () => {
       addSegment();
@@ -394,6 +414,8 @@ function Video({
           console.log(onTabChange);
           if (onTabChange.pause) videoRef?.current.pause();
         }
+      } else {
+        startCountingPageStayTime();
       }
     };
     const handleBuffering = () => {
@@ -413,7 +435,21 @@ function Video({
         console.log("seekStatus test", seekStatus.current);
       }
     };
+    const handleLoadedData = () => {
+      startCountingPageStayTime();
+    };
 
+    const handleFocus = () => {
+      console.log("FOCUS");
+      startCountingPageStayTime();
+    };
+
+    const handleBlur = () => {
+      console.log("HandleBLUR");
+      clearInterval(activeTimeIntervalRef.current);
+    };
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("enterpictureinpicture", handleEnterPiP);
     document.addEventListener("leavepictureinpicture", handleLeavePiP);
@@ -422,8 +458,10 @@ function Video({
     videoRef?.current?.addEventListener("stalled", handleNetworkError);
 
     window.onbeforeunload = handleBeforeUnload;
-
+    window.onload = handleLoadedData;
     return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
       videoRef?.current?.removeEventListener("waiting", handleBuffering);
       videoRef?.current?.removeEventListener("stalled", handleNetworkError);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -458,7 +496,7 @@ function Video({
           ref={videoRef}
           // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
           // src={video_src[Object.keys(video_src)[0]]}
-          style={{ width: "1920px", height: "1080px" }}
+          style={{ width: "1280px", height: "720px" }}
           src={[
             {
               src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -512,7 +550,7 @@ function Video({
           </MediaProvider>
           <DefaultVideoLayout icons={defaultLayoutIcons} />
         </MediaPlayer>
-        <div className=" " style={{ width: "1920px" }}>
+        <div className=" " style={{ width: "1280px" }}>
           {HeatMapArray.length > 0 ? (
             <Heatmap pv={HeatMapArray} />
           ) : (
@@ -523,8 +561,11 @@ function Video({
         </div>
       </div>
       <div className="flex flex-col items-start gap-4">
-        <div className="text-gray-800 font-medium">
-          {getUniqueWatchTime()} seconds unique viewed by you
+        <div className="text-green-600 text-xl font-semibold">
+          {getUniqueWatchTime()} seconds unique viewed
+        </div>
+        <div className=" text-red-600 text-xl font-semibold">
+          {pageStayTime} second stayed on this page
         </div>
       </div>
     </div>
