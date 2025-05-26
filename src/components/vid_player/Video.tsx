@@ -1,6 +1,16 @@
-import React, { useEffect, useRef } from "react";
-
-import Heatmap from "./Heatmap";
+import "@vidstack/react/player/styles/default/theme.css";
+import "@vidstack/react/player/styles/default/layouts/video.css";
+import {
+  MediaPlayer,
+  MediaPlayerInstance,
+  MediaProvider,
+} from "@vidstack/react";
+import {
+  DefaultVideoLayout,
+  defaultLayoutIcons,
+} from "@vidstack/react/player/layouts/default";
+import React, { useRef, useEffect } from "react";
+import Heatmap from "../Heatmap";
 import {
   Select,
   SelectContent,
@@ -33,8 +43,9 @@ interface myInfoType {
   array: Segment[];
   video_id: number;
   lastWatchedTime: number;
-  lastSubtitle:string;
+  lastSubtitle: string;
 }
+
 function Video({
   video_id = 12,
   video_src = {
@@ -44,7 +55,8 @@ function Video({
   watchIntervalTime = 30,
   onTabChange = { pause: false },
 }: videoProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<MediaPlayerInstance>(null);
+  // const videoRef = useRef<HTMLVideoElement>(null);
   const previousModeRef = useRef<Record<string, string>>({});
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
@@ -66,7 +78,7 @@ function Video({
         array: [],
         video_id: video_id,
         lastWatchedTime: 0,
-        lastSubtitle:"no"
+        lastSubtitle: "no",
       }
     );
   };
@@ -124,8 +136,12 @@ function Video({
     );
 
     const index = previousPushedData.findIndex(
-      (item: { video_id: number; array: []; lastWatchedTime: number;lastSubtitle:string }) =>
-        item.video_id === video_id
+      (item: {
+        video_id: number;
+        array: [];
+        lastWatchedTime: number;
+        lastSubtitle: string;
+      }) => item.video_id === video_id
     );
     if (index !== -1) {
       previousPushedData[index] = myInfo.current;
@@ -163,21 +179,19 @@ function Video({
       ],
     };
 
-    
-
     console.log("Adding Segment: ", myInfo.current);
 
     if (videoRef.current) {
       console.log(videoRef.current.textTracks, "TEXTTRACKSSSSSSSS");
-      const tracks=videoRef.current.textTracks;
-      let lastSubtitleLocal="no";
-      for(let i=0;i<tracks.length;i++){
-        if(tracks[i].mode==='showing'){
-          lastSubtitleLocal=tracks[i].label;
+      const tracks = videoRef.current.textTracks;
+      let lastSubtitleLocal = "no";
+      for (let i = 0; i < tracks.length; i++) {
+        if (tracks[i].mode === "showing") {
+          lastSubtitleLocal = tracks[i].label;
           break;
         }
       }
-      myInfo.current.lastSubtitle=lastSubtitleLocal;
+      myInfo.current.lastSubtitle = lastSubtitleLocal;
     }
     myInfo.current.lastWatchedTime = lastWatched.current;
     startWatched.current = getCurrentTime() + 1;
@@ -317,9 +331,12 @@ function Video({
   const handleLoadedData = () => {
     if (videoRef.current && myInfo.current) {
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
-      const tracks=videoRef.current.textTracks;
-      for(let i=0;i<tracks.length;i++){
-        tracks[i].mode=tracks[i].label===myInfo.current.lastSubtitle?"showing":"disabled"
+      const tracks = videoRef.current.textTracks;
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode =
+          tracks[i].label === myInfo.current.lastSubtitle
+            ? "showing"
+            : "disabled";
       }
     }
     console.log(videoRef.current?.duration);
@@ -352,7 +369,6 @@ function Video({
       console.log(screen_mode.current, "Set Screen Mode");
     };
     const handleBeforeUnload = () => {
-      
       addSegment();
     };
     const handleVisibilityChange = () => {
@@ -442,12 +458,13 @@ function Video({
 
   return (
     <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
-      <div className="flex flex-col items-center gap-4">
-        <video
+      <div>
+        <MediaPlayer
+          ref={videoRef}
+          // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "640px", height: "360px" }}
           className="mb-2"
-          ref={videoRef}
-          src={video_src[Object.keys(video_src)[0]]}
           
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
@@ -458,22 +475,24 @@ function Video({
           onSeeked={handleSeeked}
           onEnded={handleEnded}
           onTimeUpdate={handleTimeUpdate}
+          // playsInline
         >
-          <track
-            kind="subtitles"
-            src="/subtitles/subtitles-en.vtt"
-            srcLang="en"
-            label="English Subtitles"
-          />
-          <track
-            kind="subtitles"
-            src="/subtitles/subtitles-es.vtt"
-            srcLang="es"
-            label="Spanish Subtitles"
-          />
-        </video>
-
-        {/* Heatmap Under Video */}
+          <MediaProvider>
+            <track
+              kind="subtitles"
+              src="/subtitles/subtitles-es.vtt"
+              srcLang="es"
+              label="Spanish Subtitles"
+            />
+            <track
+              kind="subtitles"
+              src="/subtitles/subtitles-en.vtt"
+              srcLang="en"
+              label="English Subtitles"
+            />
+          </MediaProvider>
+          <DefaultVideoLayout icons={defaultLayoutIcons} />
+        </MediaPlayer>
         <div className="w-[640px]">
           {HeatMapArray.length > 0 ? (
             <Heatmap pv={HeatMapArray} />
@@ -484,8 +503,6 @@ function Video({
           )}
         </div>
       </div>
-
-      {/* Right Column: Quality + Unique Watch Time */}
       <div className="flex flex-col items-start gap-4">
         <Select
           onValueChange={handleQualityChange}
