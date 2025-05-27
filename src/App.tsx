@@ -22,7 +22,7 @@ function App() {
       <Video
         video_id={15}
         video_src={videoSources}
-        watchIntervalTime={10}
+        watchIntervalTime={5}
         onTabChange={{
           pause: true,
         }}

@@ -1,18 +1,10 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import './index.css'
-import {
-  Menu,
-  useAudioOptions,
-  type MediaQualitiesChangeEvent,
-  type MediaQualityChangeEvent,
-  type VideoQuality,
-} from "@vidstack/react";
+import { type VideoQuality } from "@vidstack/react";
 import {
   MediaPlayer,
   MediaPlayerInstance,
   MediaProvider,
-  useMediaContext,
 } from "@vidstack/react";
 import {
   DefaultVideoLayout,
@@ -20,15 +12,10 @@ import {
 } from "@vidstack/react/player/layouts/default";
 import React, { useRef, useEffect, useState } from "react";
 import Heatmap from "../Heatmap";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import AudioSubmenu from "./AudioSubmenu";
 
+import { TimeSlider } from "@vidstack/react";
+import TimeSliderComponent from "./TimeSliderComponent";
+import { stringify } from "querystring";
 interface videoProps {
   video_id?: number;
   video_src?: { [key: string]: string };
@@ -514,8 +501,9 @@ function Video({
   };
 
   const handleQualityChange = (quality: VideoQuality | null) => {
+    console.log("Quality changed: ", quality);
     addSegment();
-    video_Quality.current = quality?.id || "auto";
+    video_Quality.current = quality?.height + "" || "auto";
   };
 
   const handleOnLoadedMetaData = () => {
@@ -524,7 +512,9 @@ function Video({
   // console.log(videoRef.current?.state?.audioTracks[1]?.selected,"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
   return (
+    // <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
     <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
+      {/* <div className="font-sans text-align-center"> */}
       <div>
         <MediaPlayer
           ref={videoRef}
@@ -572,18 +562,19 @@ function Video({
             
             
           </MediaProvider>
-          
-          <DefaultVideoLayout icons={defaultLayoutIcons} />
+          <DefaultVideoLayout
+            icons={defaultLayoutIcons}
+            slots={{
+              timeSlider: (
+                <div className="relative w-full h-25 -z-10">
+                  <Heatmap pv={HeatMapArray} />
+
+                  <TimeSliderComponent />
+                </div>
+              ),
+            }}
+          />
         </MediaPlayer>
-        <div className=" " style={{ width: "1280px" }}>
-          {HeatMapArray.length > 0 ? (
-            <Heatmap pv={HeatMapArray} />
-          ) : (
-            <div className="h-20 bg-gray-200 flex items-center justify-center text-gray-600 text-sm">
-              No heatmap data
-            </div>
-          )}
-        </div>
       </div>
       <div className="flex flex-col items-start gap-4">
         <div className="text-green-600 text-xl font-semibold">
