@@ -1,0 +1,4 @@
+media-menu-item[label="Audio Boost"],
+.vds-menu-item[aria-label="Audio Boost"] {
+  display: none !important;
+}
