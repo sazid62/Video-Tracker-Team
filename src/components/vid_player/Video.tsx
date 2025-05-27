@@ -55,8 +55,8 @@ function Video({
 }: videoProps) {
   const videoRef = useRef<MediaPlayerInstance>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
-  const previousSubtitleModeRef = useRef<Record<string, string>>({});
-  const previousAudioModeRef = useRef("");
+  const previousSubtitleModeRef = useRef("no");
+  const previousAudioModeRef = useRef("no");
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
   const isPlaying = useRef(false);
@@ -64,8 +64,7 @@ function Video({
   const lastVolume = useRef(1);
   const muteStatus = useRef(false);
   const seekStatus = useRef("noseeked");
-  const subtitleRef = useRef("no");
-  const audioRef=useRef("eng");
+  
   const playBackSpeed = useRef(1);
   const video_Quality = useRef("auto");
   const activeTimeOnPageRef = useRef(0);
@@ -185,28 +184,16 @@ function Video({
           current_volume: lastVolume.current,
           isMuted: muteStatus.current,
           seekByMouseOrKey: seekStatus.current,
-          subtitleLanguage: subtitleRef.current,
+          subtitleLanguage: previousSubtitleModeRef.current,
           playBackSpeed: playBackSpeed.current,
           videoQuality: video_Quality.current,
-          selectedAudio:audioRef.current
+          selectedAudio:previousAudioModeRef.current
         },
       ],
     };
 
     console.log("Adding Segment: ", myInfo.current);
-
-    if (videoRef.current) {
-      
-      const tracks = videoRef.current.textTracks;
-      let lastSubtitleLocal = "no";
-      for (let i = 0; i < tracks.length; i++) {
-        if (tracks[i].mode === "showing") {
-          lastSubtitleLocal = tracks[i].label;
-          break;
-        }
-      }
-      myInfo.current.lastSubtitle = lastSubtitleLocal;
-    }
+    myInfo.current.lastSubtitle = previousSubtitleModeRef.current;
     myInfo.current.lastWatchedTime = lastWatched.current;
     startWatched.current = getCurrentTime() + 1;
     lastWatched.current = getCurrentTime() + 1;
@@ -302,45 +289,45 @@ function Video({
     // console.log(screen_mode.current);
 
     if (videoRef.current) {
-      const tracks = videoRef.current.state.textTracks;
-      for (let i = 0; i < tracks.length; i++) {
-        const track = tracks[i];
-        const prevMode = previousSubtitleModeRef.current[track.label];
-        if (prevMode !== track.mode) {
-          // addSegment();
-          console.log(
-            `Track ${track.label} changed from ${prevMode} to ${track.mode}`
-          );
-          previousSubtitleModeRef.current[track.label] = track.mode;
+      // const tracks = videoRef.current.state.textTracks;
+      // for (let i = 0; i < tracks.length; i++) {
+      //   const track = tracks[i];
+      //   const prevMode = previousSubtitleModeRef.current[track.label];
+      //   if (prevMode !== track.mode) {
+      //     // addSegment();
+      //     console.log(
+      //       `Track ${track.label} changed from ${prevMode} to ${track.mode}`
+      //     );
+      //     previousSubtitleModeRef.current[track.label] = track.mode;
 
-          // Log active subtitle
-          const activeTrack = Array.from(tracks).find(
-            (t) => t.mode === "showing"
-          );
-          if (activeTrack) {
-            subtitleRef.current = activeTrack.language;
-            console.log(`Active subtitle: ${activeTrack.label}`);
-          } else {
-            subtitleRef.current = "no";
-            console.log("No subtitles active");
-          }
-        }
-      }
-      const audioTracks=videoRef.current.state.audioTracks;
-      const prevMode=previousAudioModeRef.current;
-      for(let i=0;i<audioTracks.length;i++){
-        const audiotrack=audioTracks[i];
-        if(audiotrack.selected===true){
-          if(prevMode!==audiotrack.language){
-            addSegment();
-            previousAudioModeRef.current=audiotrack.language;
-            audioRef.current=audiotrack.language;
-          }
-        }
+      //     // Log active subtitle
+      //     const activeTrack = Array.from(tracks).find(
+      //       (t) => t.mode === "showing"
+      //     );
+      //     if (activeTrack) {
+      //       subtitleRef.current = activeTrack.language;
+      //       console.log(`Active subtitle: ${activeTrack.label}`);
+      //     } else {
+      //       subtitleRef.current = "no";
+      //       console.log("No subtitles active");
+      //     }
+      //   }
+      // }
+      // const audioTracks=videoRef.current.state.audioTracks;
+      // const prevMode=previousAudioModeRef.current;
+      // for(let i=0;i<audioTracks.length;i++){
+      //   const audiotrack=audioTracks[i];
+      //   if(audiotrack.selected===true){
+      //     if(prevMode!==audiotrack.language){
+      //       addSegment();
+      //       previousAudioModeRef.current=audiotrack.language;
+      //       // audioRef.current=audiotrack.language;
+      //     }
+      //   }
         
 
 
-      }
+      // }
     }
 
     if (!videoRef.current?.state.seeking) {
@@ -360,8 +347,10 @@ function Video({
 
   const handleLoadedData = () => {
     if (videoRef.current && myInfo.current) {
+      
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
       const tracks = videoRef.current.state.textTracks;
+      
       for (let i = 0; i < tracks.length; i++) {
         tracks[i].mode =
           tracks[i].label === myInfo.current.lastSubtitle
@@ -369,15 +358,16 @@ function Video({
             : "disabled";
       }
       const audioTracks=videoRef.current.state.audioTracks;
+      
       // console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
       for(let i=0;i<audioTracks.length;i++){
         if(audioTracks[i].selected===true){
-          audioRef.current=audioTracks[i].language;
           previousAudioModeRef.current=audioTracks[i].language
         }
       }
-      console.log(audioRef.current)
+      
     }
+    
 
     startCountingPageStayTime();
     console.log(videoRef.current?.duration);
@@ -513,6 +503,36 @@ function Video({
   const handleOnLoadedMetaData = () => {
     
   };
+  const handleTextTrackChange=()=>{
+    
+    
+    if(isPlaying.current){
+      addSegment();
+    }
+
+    const textTrack=videoRef.current?.textTracks||[];
+    for(let i=0;i<textTrack?.length;i++){
+      if(textTrack[i]?.mode==='showing'){
+        previousSubtitleModeRef.current=textTrack[i]?.language || "not define";
+        return;
+      }
+    }
+    previousSubtitleModeRef.current="no";
+
+  }
+  const handleonAudioTrackChange=()=>{
+    if(isPlaying.current){
+      addSegment();
+    }
+    const audiotrack=videoRef.current?.audioTracks||[];
+    for(let i=0;i<audiotrack?.length;i++){
+      if(audiotrack[i]?.selected){
+        previousAudioModeRef.current=audiotrack[i]?.language||"not define";
+        return;
+      }
+    }
+    previousAudioModeRef.current="no";
+  }
   // console.log(videoRef.current?.state?.audioTracks[1]?.selected,"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
   return (
@@ -525,6 +545,8 @@ function Video({
           src="https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
           // src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "1280px", height: "720px" }}
+          onTextTrackChange={handleTextTrackChange}
+          onAudioTrackChange={handleonAudioTrackChange}
           // src={[
           //   {
           //     src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -559,6 +581,7 @@ function Video({
           onSeeked={handleSeeked}
           onEnded={handleEnded}
           onTimeUpdate={handleTimeUpdate}
+          crossOrigin
           playsInline={false}
         >
           <MediaProvider>
