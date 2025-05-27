@@ -13,9 +13,8 @@ import {
 import React, { useRef, useEffect, useState } from "react";
 import Heatmap from "../Heatmap";
 
-import { TimeSlider } from "@vidstack/react";
 import TimeSliderComponent from "./TimeSliderComponent";
-import { stringify } from "querystring";
+
 interface videoProps {
   video_id?: number;
   video_src?: { [key: string]: string };
@@ -511,7 +510,7 @@ function Video({
           onSeeked={handleSeeked}
           onEnded={handleEnded}
           onTimeUpdate={handleTimeUpdate}
-          playsInline={false}
+          playsInline={true}
         >
           <MediaProvider>
             ;
@@ -532,11 +531,12 @@ function Video({
             icons={defaultLayoutIcons}
             slots={{
               timeSlider: (
-                <div className="relative w-full h-25 -z-10">
-                  <Heatmap pv={HeatMapArray} />
-
-                  <TimeSliderComponent />
-                </div>
+                <>
+                  <div className="w-full h-full mb-1 ">
+                    <Heatmap pv={HeatMapArray} />
+                    <TimeSliderComponent />
+                  </div>
+                </>
               ),
             }}
           />

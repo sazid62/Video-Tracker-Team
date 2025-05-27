@@ -6,7 +6,7 @@ export default function Heatmap({ pv }: HeatmapProps) {
   // Massage the data into the expected format for Recharts
   const data = pv.map((val, i) => ({ name: i, views: val }));
   return (
-    <div className="h-12  ">
+    <div className="h-12  z-[-10]">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           width={500}
