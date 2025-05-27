@@ -1,6 +1,9 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
+import './index.css'
 import {
+  Menu,
+  useAudioOptions,
   type MediaQualitiesChangeEvent,
   type MediaQualityChangeEvent,
   type VideoQuality,
@@ -24,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AudioSubmenu from "./AudioSubmenu";
 
 interface videoProps {
   video_id?: number;
@@ -44,6 +48,7 @@ interface Segment {
   subtitleLanguage: string;
   playBackSpeed: number;
   videoQuality: string;
+  selectedAudio:string;
 }
 interface myInfoType {
   array: Segment[];
@@ -63,7 +68,8 @@ function Video({
 }: videoProps) {
   const videoRef = useRef<MediaPlayerInstance>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
-  const previousModeRef = useRef<Record<string, string>>({});
+  const previousSubtitleModeRef = useRef<Record<string, string>>({});
+  const previousAudioModeRef = useRef<Record<string, boolean>>({});
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
   const isPlaying = useRef(false);
@@ -72,6 +78,7 @@ function Video({
   const muteStatus = useRef(false);
   const seekStatus = useRef("noseeked");
   const subtitleRef = useRef("no");
+  const audioRef=useRef("eng");
   const playBackSpeed = useRef(1);
   const video_Quality = useRef("auto");
   const activeTimeOnPageRef = useRef(0);
@@ -194,6 +201,7 @@ function Video({
           subtitleLanguage: subtitleRef.current,
           playBackSpeed: playBackSpeed.current,
           videoQuality: video_Quality.current,
+          selectedAudio:audioRef.current
         },
       ],
     };
@@ -201,7 +209,7 @@ function Video({
     console.log("Adding Segment: ", myInfo.current);
 
     if (videoRef.current) {
-      console.log(videoRef.current.textTracks, "TEXTTRACKSSSSSSSS");
+      
       const tracks = videoRef.current.textTracks;
       let lastSubtitleLocal = "no";
       for (let i = 0; i < tracks.length; i++) {
@@ -310,13 +318,13 @@ function Video({
       const tracks = videoRef.current.state.textTracks;
       for (let i = 0; i < tracks.length; i++) {
         const track = tracks[i];
-        const prevMode = previousModeRef.current[track.label];
+        const prevMode = previousSubtitleModeRef.current[track.label];
         if (prevMode !== track.mode) {
-          addSegment();
+          // addSegment();
           console.log(
             `Track ${track.label} changed from ${prevMode} to ${track.mode}`
           );
-          previousModeRef.current[track.label] = track.mode;
+          previousSubtitleModeRef.current[track.label] = track.mode;
 
           // Log active subtitle
           const activeTrack = Array.from(tracks).find(
@@ -330,6 +338,18 @@ function Video({
             console.log("No subtitles active");
           }
         }
+      }
+      const audioTracks=videoRef.current.state.audioTracks;
+      for(let i=0;i<audioTracks.length;i++){
+        const audiotrack=audioTracks[i];
+        const prevMode=previousAudioModeRef.current[audiotrack.label];
+        if(prevMode!==audiotrack.selected){
+          // addSegment();
+          previousAudioModeRef.current[audiotrack.label]=audiotrack.selected;
+          // audioRef.current=audiotrack.language
+        }
+
+
       }
     }
 
@@ -358,6 +378,14 @@ function Video({
             ? "showing"
             : "disabled";
       }
+      const audioTracks=videoRef.current.state.audioTracks;
+      console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
+      for(let i=0;i<audioTracks.length;i++){
+        if(audioTracks[i].selected===true){
+          audioRef.current=audioTracks[i].language;
+        }
+      }
+      console.log(audioRef.current)
     }
 
     startCountingPageStayTime();
@@ -490,36 +518,39 @@ function Video({
     video_Quality.current = quality?.id || "auto";
   };
 
-  const handleOnLoadedMetaData = () => {};
+  const handleOnLoadedMetaData = () => {
+    
+  };
+  // console.log(videoRef.current?.state?.audioTracks[1]?.selected,"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
   return (
     <div className="flex min-h-screen bg-gray-50 p-6 gap-12 justify-center ml-50 mt-20">
       <div>
         <MediaPlayer
           ref={videoRef}
-          // src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          src="https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
           // src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "1280px", height: "720px" }}
-          src={[
-            {
-              src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
-              type: "video/mp4",
-              width: 1920,
-              height: 1080,
-            },
-            {
-              src: "https://files.vidstack.io/sprite-fight/720p.mp4",
-              type: "video/mp4",
-              width: 1280,
-              height: 720,
-            },
-            {
-              src: "https://files.vidstack.io/sprite-fight/240p.mp4",
-              type: "video/mp4",
-              width: 320,
-              height: 240,
-            },
-          ]}
+          // src={[
+          //   {
+          //     src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
+          //     type: "video/mp4",
+          //     width: 1920,
+          //     height: 1080,
+          //   },
+          //   {
+          //     src: "https://files.vidstack.io/sprite-fight/720p.mp4",
+          //     type: "video/mp4",
+          //     width: 1280,
+          //     height: 720,
+          //   },
+          //   {
+          //     src: "https://files.vidstack.io/sprite-fight/240p.mp4",
+          //     type: "video/mp4",
+          //     width: 320,
+          //     height: 240,
+          //   },
+          // ]}
           className="mb-2"
           // onKeyDown={(e)=>{console.log("Down")}}
 
@@ -537,20 +568,11 @@ function Video({
           playsInline={false}
         >
           <MediaProvider>
-            ;
-            <track
-              kind="subtitles"
-              src="/subtitles/subtitles-es.vtt"
-              srcLang="es"
-              label="Spanish Subtitles"
-            />
-            <track
-              kind="subtitles"
-              src="/subtitles/subtitles-en.vtt"
-              srcLang="en"
-              label="English Subtitles"
-            />
+            
+            
+            
           </MediaProvider>
+          
           <DefaultVideoLayout icons={defaultLayoutIcons} />
         </MediaPlayer>
         <div className=" " style={{ width: "1280px" }}>

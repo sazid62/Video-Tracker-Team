@@ -73,6 +73,7 @@ function Video({
   };
 
   const myInfo = useRef<myInfoType>(myInfoInitialize());
+  
 
   const getUniqueWatchTime = () => {
     let end: number = -1;
