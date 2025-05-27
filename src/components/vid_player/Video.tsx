@@ -13,9 +13,9 @@ import {
 import React, { useRef, useEffect, useState } from "react";
 import Heatmap from "../Heatmap";
 
-import { TimeSlider } from "@vidstack/react";
+
 import TimeSliderComponent from "./TimeSliderComponent";
-import { stringify } from "querystring";
+
 interface videoProps {
   video_id?: number;
   video_src?: { [key: string]: string };
@@ -56,7 +56,7 @@ function Video({
   const videoRef = useRef<MediaPlayerInstance>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
   const previousSubtitleModeRef = useRef<Record<string, string>>({});
-  const previousAudioModeRef = useRef<Record<string, boolean>>({});
+  const previousAudioModeRef = useRef("");
   const lastWatched = useRef(0);
   const startWatched = useRef(0);
   const isPlaying = useRef(false);
@@ -327,14 +327,17 @@ function Video({
         }
       }
       const audioTracks=videoRef.current.state.audioTracks;
+      const prevMode=previousAudioModeRef.current;
       for(let i=0;i<audioTracks.length;i++){
         const audiotrack=audioTracks[i];
-        const prevMode=previousAudioModeRef.current[audiotrack.label];
-        if(prevMode!==audiotrack.selected){
-          // addSegment();
-          previousAudioModeRef.current[audiotrack.label]=audiotrack.selected;
-          // audioRef.current=audiotrack.language
+        if(audiotrack.selected===true){
+          if(prevMode!==audiotrack.language){
+            addSegment();
+            previousAudioModeRef.current=audiotrack.language;
+            audioRef.current=audiotrack.language;
+          }
         }
+        
 
 
       }
@@ -366,10 +369,11 @@ function Video({
             : "disabled";
       }
       const audioTracks=videoRef.current.state.audioTracks;
-      console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
+      // console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
       for(let i=0;i<audioTracks.length;i++){
         if(audioTracks[i].selected===true){
           audioRef.current=audioTracks[i].language;
+          previousAudioModeRef.current=audioTracks[i].language
         }
       }
       console.log(audioRef.current)
@@ -566,11 +570,12 @@ function Video({
             icons={defaultLayoutIcons}
             slots={{
               timeSlider: (
-                <div className="relative w-full h-25 -z-10">
-                  <Heatmap pv={HeatMapArray} />
-
-                  <TimeSliderComponent />
-                </div>
+                <>
+                  <div className="w-full h-full mb-1 ">
+                    <Heatmap pv={HeatMapArray} />
+                    <TimeSliderComponent />
+                  </div>
+                </>
               ),
             }}
           />
