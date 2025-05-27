@@ -3,9 +3,10 @@ interface HeatmapProps {
   pv: number[];
 }
 export default function Heatmap({ pv }: HeatmapProps) {
-  const data = pv.map((val: number, i: number) => ({ name: i, views: val }));
+  // Massage the data into the expected format for Recharts
+  const data = pv.map((val, i) => ({ name: i, views: val }));
   return (
-    <div className="h-30 mb-4">
+    <div className="h-12  ">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           width={500}
