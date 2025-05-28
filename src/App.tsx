@@ -25,8 +25,17 @@ function App() {
           "https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
         }
         watchIntervalTime={5}
+        seekForward={false}
         onTabChange={{
-          pause: true,
+          videoPause: true,
+        }}
+        heatMap={{
+          show: true,
+          color: "#8884d8",
+          height: 48,
+          className: "",
+          strokeColor: "#8884d8",
+          gradientId: "colorUv",
         }}
       />
     </>
