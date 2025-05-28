@@ -302,7 +302,7 @@ function Video({
         seekStatus.current = "mouse";
       }
 
-      console.log("Rabbby fault");
+      
       addSegment();
     }
 
