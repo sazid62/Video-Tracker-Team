@@ -45,6 +45,8 @@ interface myInfoType {
   lastSubtitle: string;
   lastVideoQuality: number;
   lastPlayBackSpeed: number;
+  lastVolume:number;
+  isMuted:boolean;
 }
 
 function Video({
@@ -58,7 +60,8 @@ function Video({
   const previousSubtitleModeRef = useRef("no");
   const previousAudioModeRef = useRef("no");
   const lastWatched = useRef(0);
-  const startWatched = useRef(0);
+  
+  
   const isPlaying = useRef(false);
   const screen_mode = useRef("normal");
   const lastVolume = useRef(1);
@@ -84,12 +87,16 @@ function Video({
         lastSubtitle: "no",
         lastVideoQuality: 720,
         lastPlayBackSpeed: 1,
+        lastVolume:1,
+        isMuted:false,
       }
     );
   };
 
 
+
   const myInfo = useRef<myInfoType>(myInfoInitialize());
+  const startWatched = useRef(myInfo.current.lastWatchedTime);
 
   const getUniqueWatchTime = () => {
     let end: number = -1;
@@ -203,8 +210,10 @@ function Video({
     myInfo.current.lastWatchedTime = lastWatched.current;
     myInfo.current.lastVideoQuality = video_Quality.current;
     myInfo.current.lastPlayBackSpeed = playBackSpeed.current;
-
+    myInfo.current.lastVolume=lastVolume.current;
+    myInfo.current.isMuted=muteStatus.current;
     lastWatched.current = getCurrentTime() + 1;
+    startWatched.current=getCurrentTime()+1;
     seekStatus.current = "noseeked";
     setDataToLocalStorageFromAddSegment();
   };
@@ -339,10 +348,14 @@ function Video({
       // console.log(startWatched.current, lastWatched.current, isPlaying.current);
       if (
         lastWatched.current - startWatched.current >= watchIntervalTime &&
-        isPlaying.current
+        isPlaying.current && videoRef.current
       ) {
+        console.log("Timeupdate********************************************************************************************");
+        console.log("LastWatched",lastWatched.current);
+        console.log("startWatched",startWatched.current);
         addSegment();
       }
+
     }
 
     setHeatMapArray(generateHeatmap());
@@ -369,22 +382,17 @@ function Video({
       videoRef.current.playbackRate = myInfo.current.lastPlayBackSpeed;
     }
   };
-  const selectLastSubtitle = () => {
-    const player = videoRef.current;
-    if (!player) return;
-
-    // Automatically select "English" subtitle track if available
-    const englishTrack = player.textTracks
-      .toArray()
-      .find((track) => track.language === "en");
-
-    if (englishTrack) {
-      englishTrack.mode = "disabled";
+  const selectLastVolume=()=>{
+    if(videoRef.current){
+      videoRef.current.muted=myInfo.current.isMuted;
+      videoRef.current.volume=myInfo.current.lastVolume;
     }
-  };
+  }
+  
   const handleLoadedData = () => {
     selectLastVideoQuality();
     selectLastPlayBackSpeed();
+    selectLastVolume();
     // selectLastSubtitle();
     if (videoRef.current && myInfo.current) {
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
@@ -392,7 +400,7 @@ function Video({
       
       // textTracks[3].mode='disabled'
       
-      remote.changeTextTrackMode(1,'disabled');
+      
       
       // for (let i = 0; i < tracks.length; i++) {
       //   if(tracks[i].mode==='showing'){
@@ -545,6 +553,7 @@ function Video({
     video_Quality.current = quality?.height as number;
   };
 
+
   const handleOnLoadedMetaData = () => {
     
   };
@@ -585,8 +594,6 @@ function Video({
     if(isPlaying.current){
       addSegment();
     }
-    selectLastSubtitle();
-    return;
     const textTrack = videoRef.current?.textTracks || [];
     for (let i = 0; i < textTrack?.length; i++) {
       if (textTrack[i]?.mode === "showing") {
