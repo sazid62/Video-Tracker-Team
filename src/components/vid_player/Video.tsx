@@ -1,7 +1,6 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
 import { type VideoQuality } from "@vidstack/react";
-import { type MediaTextTracksChangeEvent } from "@vidstack/react";
 import {
   MediaPlayer,
   MediaPlayerInstance,
@@ -44,6 +43,7 @@ interface myInfoType {
   lastSubtitle: string;
   lastVideoQuality: number;
   lastPlayBackSpeed: number;
+  maxWatchPosition: number;
 }
 
 function Video({
@@ -80,6 +80,7 @@ function Video({
         lastSubtitle: "no",
         lastVideoQuality: 720,
         lastPlayBackSpeed: 1,
+        maxWatchPosition: 0,
       }
     );
   };
@@ -157,11 +158,12 @@ function Video({
     if (startWatched.current >= lastWatched.current) {
       return;
     }
+
     seekStatus.current = "noseeked";
-    console.log(
-      videoRef.current?.state.lastKeyboardAction,
-      "gooooooooooooooooooood"
-    );
+    // console.log(
+    //   videoRef.current?.state.lastKeyboardAction,
+    //   "gooooooooooooooooooood"
+    // );
     if (
       videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
       videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
@@ -195,11 +197,13 @@ function Video({
 
     console.log("Adding Segment: ", myInfo.current);
     myInfo.current.lastSubtitle = previousSubtitleModeRef.current;
-    myInfo.current.lastWatchedTime = lastWatched.current;
+    myInfo.current.lastWatchedTime =
+      getCurrentTime() > 0 ? getCurrentTime() : lastWatched.current;
     myInfo.current.lastVideoQuality = video_Quality.current;
     myInfo.current.lastPlayBackSpeed = playBackSpeed.current;
 
     lastWatched.current = getCurrentTime() + 1;
+    startWatched.current = getCurrentTime() + 1;
     seekStatus.current = "noseeked";
     setDataToLocalStorageFromAddSegment();
   };
@@ -256,6 +260,24 @@ function Video({
     addSegment();
   };
 
+  const blockSeekingForward = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime =
+        getCurrentTime() <= myInfo.current.maxWatchPosition
+          ? getCurrentTime()
+          : Math.min(lastWatched.current, myInfo.current.maxWatchPosition);
+      // console.log({
+      //   maxWatched: myInfo.current.maxWatchPosition,
+      //   lastPost: lastWatched.current,
+      //   current: videoRef.current.currentTime,
+      //   result:
+      //     getCurrentTime() <= myInfo.current.maxWatchPosition
+      //       ? getCurrentTime()
+      //       : Math.min(lastWatched.current, myInfo.current.maxWatchPosition),
+      // });
+    }
+  };
+
   const handleSeeking = () => {
     console.log("Before seekd user at:  ", lastWatched.current);
 
@@ -264,18 +286,22 @@ function Video({
       getCurrentTime() > lastWatched.current &&
       lastWatched.current - startWatched.current >= 1
     ) {
-      // console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
       if (seekStatus.current === "noseeked") {
         seekStatus.current = "mouse";
       }
+
+      console.log("Rabbby fault");
       addSegment();
     }
 
     console.log("Seeking to time:", getCurrentTime());
+
+    blockSeekingForward();
   };
 
   const handleSeeked = () => {
     // isPlaying.current = false;
+    blockSeekingForward();
     console.log("Seeked to time:", getCurrentTime());
     console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
     startWatched.current = getCurrentTime() + 1;
@@ -330,11 +356,17 @@ function Video({
     }
 
     if (!videoRef.current?.state.seeking) {
+      // console.log("Updating");
       lastWatched.current = getCurrentTime();
+      myInfo.current.maxWatchPosition = Math.max(
+        myInfo.current.maxWatchPosition,
+        getCurrentTime()
+      );
+
       // console.log(startWatched.current, lastWatched.current, isPlaying.current);
       if (
-        lastWatched.current - startWatched.current >= watchIntervalTime &&
-        isPlaying.current
+        Math.abs(lastWatched.current - startWatched.current) >=
+        watchIntervalTime
       ) {
         addSegment();
       }
@@ -382,6 +414,7 @@ function Video({
     selectLastPlayBackSpeed();
     // selectLastSubtitle();
     if (videoRef.current && myInfo.current) {
+      console.log(myInfo.current.lastWatchedTime, "Rabby kufa");
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
       const tracks = videoRef.current.state.textTracks;
 
