@@ -30,13 +30,16 @@ function App() {
           videoPause: true,
         }}
         heatMap={{
-          show: true,
+          show: false,
           color: "#8884d8",
           height: 48,
           className: "",
           strokeColor: "#8884d8",
           gradientId: "colorUv",
         }}
+        uniqueTimeWatch={false}
+        volumeRestore={true}
+        subtitleRestore={true}
       />
     </>
   );
