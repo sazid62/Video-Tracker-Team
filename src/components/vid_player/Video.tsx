@@ -1,6 +1,7 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
 import { type VideoQuality } from "@vidstack/react";
+import { type MediaTextTracksChangeEvent } from "@vidstack/react";
 import {
   MediaPlayer,
   MediaPlayerInstance,
@@ -13,12 +14,11 @@ import {
 import React, { useRef, useEffect, useState } from "react";
 import Heatmap from "../Heatmap";
 
-
 import TimeSliderComponent from "./TimeSliderComponent";
 
 interface videoProps {
   video_id?: number;
-  video_src?: { [key: string]: string };
+  video_src?: string;
   watchIntervalTime?: number;
   onTabChange?: {
     pause: boolean;
@@ -34,22 +34,21 @@ interface Segment {
   seekByMouseOrKey: string;
   subtitleLanguage: string;
   playBackSpeed: number;
-  videoQuality: string;
-  selectedAudio:string;
+  videoQuality: number;
+  selectedAudio: string;
 }
 interface myInfoType {
   array: Segment[];
   video_id: number;
   lastWatchedTime: number;
   lastSubtitle: string;
+  lastVideoQuality: number;
+  lastPlayBackSpeed: number;
 }
 
 function Video({
   video_id = 12,
-  video_src = {
-    "720p":
-      "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-  },
+  video_src = "https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8",
   watchIntervalTime = 30,
   onTabChange = { pause: false },
 }: videoProps) {
@@ -64,9 +63,9 @@ function Video({
   const lastVolume = useRef(1);
   const muteStatus = useRef(false);
   const seekStatus = useRef("noseeked");
-  
+
   const playBackSpeed = useRef(1);
-  const video_Quality = useRef("auto");
+  const video_Quality = useRef(720);
   const activeTimeOnPageRef = useRef(0);
 
   const myInfoInitialize = (): myInfoType => {
@@ -79,6 +78,8 @@ function Video({
         video_id: video_id,
         lastWatchedTime: 0,
         lastSubtitle: "no",
+        lastVideoQuality: 720,
+        lastPlayBackSpeed: 1,
       }
     );
   };
@@ -187,7 +188,7 @@ function Video({
           subtitleLanguage: previousSubtitleModeRef.current,
           playBackSpeed: playBackSpeed.current,
           videoQuality: video_Quality.current,
-          selectedAudio:previousAudioModeRef.current
+          selectedAudio: previousAudioModeRef.current,
         },
       ],
     };
@@ -195,7 +196,9 @@ function Video({
     console.log("Adding Segment: ", myInfo.current);
     myInfo.current.lastSubtitle = previousSubtitleModeRef.current;
     myInfo.current.lastWatchedTime = lastWatched.current;
-    startWatched.current = getCurrentTime() + 1;
+    myInfo.current.lastVideoQuality = video_Quality.current;
+    myInfo.current.lastPlayBackSpeed = playBackSpeed.current;
+
     lastWatched.current = getCurrentTime() + 1;
     seekStatus.current = "noseeked";
     setDataToLocalStorageFromAddSegment();
@@ -299,7 +302,6 @@ function Video({
       //       `Track ${track.label} changed from ${prevMode} to ${track.mode}`
       //     );
       //     previousSubtitleModeRef.current[track.label] = track.mode;
-
       //     // Log active subtitle
       //     const activeTrack = Array.from(tracks).find(
       //       (t) => t.mode === "showing"
@@ -324,9 +326,6 @@ function Video({
       //       // audioRef.current=audiotrack.language;
       //     }
       //   }
-        
-
-
       // }
     }
 
@@ -345,29 +344,62 @@ function Video({
   };
   const [HeatMapArray, setHeatMapArray] = React.useState<number[]>([]);
 
+  const selectLastVideoQuality = () => {
+    const player = videoRef.current;
+
+    const qualitiesArray = player?.qualities.toArray();
+    const lastQuality = qualitiesArray?.find(
+      (q) => q.height === myInfo.current.lastVideoQuality
+    );
+
+    if (lastQuality) {
+      lastQuality.selected = true;
+      console.log("Selected video last watch quality:", lastQuality);
+    } else {
+      console.warn("Last video quality not found");
+    }
+  };
+  const selectLastPlayBackSpeed = () => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = myInfo.current.lastPlayBackSpeed;
+    }
+  };
+  const selectLastSubtitle = () => {
+    const player = videoRef.current;
+    if (!player) return;
+
+    // Automatically select "English" subtitle track if available
+    const englishTrack = player.textTracks
+      .toArray()
+      .find((track) => track.language === "en");
+
+    if (englishTrack) {
+      englishTrack.mode = "disabled";
+    }
+  };
   const handleLoadedData = () => {
+    selectLastVideoQuality();
+    selectLastPlayBackSpeed();
+    // selectLastSubtitle();
     if (videoRef.current && myInfo.current) {
-      
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
       const tracks = videoRef.current.state.textTracks;
-      
+
       for (let i = 0; i < tracks.length; i++) {
         tracks[i].mode =
           tracks[i].label === myInfo.current.lastSubtitle
             ? "showing"
             : "disabled";
       }
-      const audioTracks=videoRef.current.state.audioTracks;
-      
+      const audioTracks = videoRef.current.state.audioTracks;
+
       // console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
-      for(let i=0;i<audioTracks.length;i++){
-        if(audioTracks[i].selected===true){
-          previousAudioModeRef.current=audioTracks[i].language
+      for (let i = 0; i < audioTracks.length; i++) {
+        if (audioTracks[i].selected === true) {
+          previousAudioModeRef.current = audioTracks[i].language;
         }
       }
-      
     }
-    
 
     startCountingPageStayTime();
     console.log(videoRef.current?.duration);
@@ -490,49 +522,48 @@ function Video({
 
   const handleRateChange = () => {
     addSegment();
-    playBackSpeed.current = videoRef.current?.playbackRate as number;
-    // console.log("Rate change", videoRef.current?.playbackRate);
+    const rate = videoRef.current?.playbackRate;
+    if (rate !== undefined) {
+      playBackSpeed.current = rate;
+    }
   };
 
   const handleQualityChange = (quality: VideoQuality | null) => {
     console.log("Quality changed: ", quality);
     addSegment();
-    video_Quality.current = quality?.height + "" || "auto";
+    video_Quality.current = quality?.height as number;
   };
 
-  const handleOnLoadedMetaData = () => {
-    
-  };
-  const handleTextTrackChange=()=>{
-    
-    
-    if(isPlaying.current){
+  const handleOnLoadedMetaData = () => {};
+  const handleTextTrackChange = () => {
+    if (isPlaying.current) {
       addSegment();
     }
-
-    const textTrack=videoRef.current?.textTracks||[];
-    for(let i=0;i<textTrack?.length;i++){
-      if(textTrack[i]?.mode==='showing'){
-        previousSubtitleModeRef.current=textTrack[i]?.language || "not define";
+    selectLastSubtitle();
+    return;
+    const textTrack = videoRef.current?.textTracks || [];
+    for (let i = 0; i < textTrack?.length; i++) {
+      if (textTrack[i]?.mode === "showing") {
+        previousSubtitleModeRef.current =
+          textTrack[i]?.language || "not define";
         return;
       }
     }
-    previousSubtitleModeRef.current="no";
-
-  }
-  const handleonAudioTrackChange=()=>{
-    if(isPlaying.current){
+    previousSubtitleModeRef.current = "no";
+  };
+  const handleonAudioTrackChange = () => {
+    if (isPlaying.current) {
       addSegment();
     }
-    const audiotrack=videoRef.current?.audioTracks||[];
-    for(let i=0;i<audiotrack?.length;i++){
-      if(audiotrack[i]?.selected){
-        previousAudioModeRef.current=audiotrack[i]?.language||"not define";
+    const audiotrack = videoRef.current?.audioTracks || [];
+    for (let i = 0; i < audiotrack?.length; i++) {
+      if (audiotrack[i]?.selected) {
+        previousAudioModeRef.current = audiotrack[i]?.language || "not define";
         return;
       }
     }
-    previousAudioModeRef.current="no";
-  }
+    previousAudioModeRef.current = "no";
+  };
   // console.log(videoRef.current?.state?.audioTracks[1]?.selected,"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
   return (
@@ -542,7 +573,7 @@ function Video({
       <div>
         <MediaPlayer
           ref={videoRef}
-          src="https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
+          src={video_src}
           // src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "1280px", height: "720px" }}
           onTextTrackChange={handleTextTrackChange}
@@ -584,26 +615,23 @@ function Video({
           crossOrigin
           playsInline={false}
         >
-          <MediaProvider>
-            
-            
-            
-          </MediaProvider>
+          <MediaProvider></MediaProvider>
           <DefaultVideoLayout
             icons={defaultLayoutIcons}
             slots={{
               timeSlider: (
-                <>
-                  <div className="w-full h-full mb-1 ">
+                <div className="relative w-full group mb-6 h-4">
+                  <div className="absolute bottom-full left-0 w-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                     <Heatmap pv={HeatMapArray} />
-                    <TimeSliderComponent />
                   </div>
-                </>
+                  <TimeSliderComponent />
+                </div>
               ),
             }}
           />
         </MediaPlayer>
       </div>
+
       <div className="flex flex-col items-start gap-4">
         <div className="text-green-600 text-xl font-semibold">
           {getUniqueWatchTime()} seconds unique viewed
