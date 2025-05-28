@@ -1,6 +1,10 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import { type VideoQuality } from "@vidstack/react";
+import {
+  useMediaRemote,
+  useMediaStore,
+  type VideoQuality,
+} from "@vidstack/react";
 import {
   MediaPlayer,
   MediaPlayerInstance,
@@ -43,6 +47,8 @@ interface myInfoType {
   lastSubtitle: string;
   lastVideoQuality: number;
   lastPlayBackSpeed: number;
+  lastVolume: number;
+  isMuted: boolean;
   maxWatchPosition: number;
 }
 
@@ -57,7 +63,7 @@ function Video({
   const previousSubtitleModeRef = useRef("no");
   const previousAudioModeRef = useRef("no");
   const lastWatched = useRef(0);
-  const startWatched = useRef(0);
+
   const isPlaying = useRef(false);
   const screen_mode = useRef("normal");
   const lastVolume = useRef(1);
@@ -67,6 +73,8 @@ function Video({
   const playBackSpeed = useRef(1);
   const video_Quality = useRef(720);
   const activeTimeOnPageRef = useRef(0);
+
+  const remote = useMediaRemote();
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -80,12 +88,15 @@ function Video({
         lastSubtitle: "no",
         lastVideoQuality: 720,
         lastPlayBackSpeed: 1,
+        lastVolume: 1,
+        isMuted: false,
         maxWatchPosition: 0,
       }
     );
   };
 
   const myInfo = useRef<myInfoType>(myInfoInitialize());
+  const startWatched = useRef(myInfo.current.lastWatchedTime);
 
   const getUniqueWatchTime = () => {
     let end: number = -1;
@@ -201,7 +212,8 @@ function Video({
       getCurrentTime() > 0 ? getCurrentTime() : lastWatched.current;
     myInfo.current.lastVideoQuality = video_Quality.current;
     myInfo.current.lastPlayBackSpeed = playBackSpeed.current;
-
+    myInfo.current.lastVolume = lastVolume.current;
+    myInfo.current.isMuted = muteStatus.current;
     lastWatched.current = getCurrentTime() + 1;
     startWatched.current = getCurrentTime() + 1;
     seekStatus.current = "noseeked";
@@ -368,6 +380,11 @@ function Video({
         Math.abs(lastWatched.current - startWatched.current) >=
         watchIntervalTime
       ) {
+        console.log(
+          "Timeupdate********************************************************************************************"
+        );
+        console.log("LastWatched", lastWatched.current);
+        console.log("startWatched", startWatched.current);
         addSegment();
       }
     }
@@ -396,34 +413,32 @@ function Video({
       videoRef.current.playbackRate = myInfo.current.lastPlayBackSpeed;
     }
   };
-  const selectLastSubtitle = () => {
-    const player = videoRef.current;
-    if (!player) return;
-
-    // Automatically select "English" subtitle track if available
-    const englishTrack = player.textTracks
-      .toArray()
-      .find((track) => track.language === "en");
-
-    if (englishTrack) {
-      englishTrack.mode = "disabled";
+  const selectLastVolume = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = myInfo.current.isMuted;
+      videoRef.current.volume = myInfo.current.lastVolume;
     }
   };
+
   const handleLoadedData = () => {
     selectLastVideoQuality();
     selectLastPlayBackSpeed();
+    selectLastVolume();
     // selectLastSubtitle();
     if (videoRef.current && myInfo.current) {
       console.log(myInfo.current.lastWatchedTime, "Rabby kufa");
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
-      const tracks = videoRef.current.state.textTracks;
+      const tracks = videoRef.current.textTracks;
 
-      for (let i = 0; i < tracks.length; i++) {
-        tracks[i].mode =
-          tracks[i].label === myInfo.current.lastSubtitle
-            ? "showing"
-            : "disabled";
-      }
+      // textTracks[3].mode='disabled'
+
+      // for (let i = 0; i < tracks.length; i++) {
+      //   if(tracks[i].mode==='showing'){
+      //     // videoRef.current.remoteControl.changeTextTrackMode(i,'disabled');
+      //     console.log(videoRef.current.textTracks,"rtrrrrr<<<<<<<<<<<");
+      //   }
+      // }
+      console.log(videoRef.current.textTracks);
       const audioTracks = videoRef.current.state.audioTracks;
 
       // console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
@@ -568,12 +583,41 @@ function Video({
   };
 
   const handleOnLoadedMetaData = () => {};
+  // const disableAllSubtitle=()=>{
+  //   const player=videoRef.current;
+  //   const currentSubtitle=player?.textTracks.toArray().find((track)=>track.mode==='showing');
+  //   if(currentSubtitle){
+  //     currentSubtitle.mode='disabled';
+  //   }
+
+  // }
+  // const addLastWatchedSubtitle=()=>{
+  //   const player=videoRef.current;
+  //   const currentSubtitle=player?.textTracks.toArray().find((track)=>track.language===myInfo.current.lastSubtitle);
+  //   if(currentSubtitle){
+  //     currentSubtitle.mode='showing';
+  //     previousSubtitleModeRef.current=currentSubtitle.language;
+  //   }
+  // }
+  const textTrackRef = useRef("first");
   const handleTextTrackChange = () => {
+    if (textTrackRef.current === "first") {
+      const textTracks = videoRef?.current?.textTracks || [];
+      for (let i = 0; i < textTracks?.length; i++) {
+        if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
+          textTracks[i].mode = "showing";
+        } else {
+          textTracks[i].mode = "disabled";
+        }
+      }
+      textTrackRef.current = "second";
+    }
+    // disableAllSubtitle();
+    // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+    // addLastWatchedSubtitle();
     if (isPlaying.current) {
       addSegment();
     }
-    selectLastSubtitle();
-    return;
     const textTrack = videoRef.current?.textTracks || [];
     for (let i = 0; i < textTrack?.length; i++) {
       if (textTrack[i]?.mode === "showing") {
@@ -609,8 +653,6 @@ function Video({
           src={video_src}
           // src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "1280px", height: "720px" }}
-          onTextTrackChange={handleTextTrackChange}
-          onAudioTrackChange={handleonAudioTrackChange}
           // src={[
           //   {
           //     src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -647,6 +689,8 @@ function Video({
           onTimeUpdate={handleTimeUpdate}
           crossOrigin
           playsInline={false}
+          onTextTrackChange={handleTextTrackChange}
+          onAudioTrackChange={handleonAudioTrackChange}
         >
           <MediaProvider></MediaProvider>
           <DefaultVideoLayout
