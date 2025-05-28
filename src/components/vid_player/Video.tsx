@@ -1,10 +1,11 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import { type VideoQuality } from "@vidstack/react";
+import { useMediaRemote, useMediaStore, type VideoQuality } from "@vidstack/react";
 import {
   MediaPlayer,
   MediaPlayerInstance,
   MediaProvider,
+  
 } from "@vidstack/react";
 import {
   DefaultVideoLayout,
@@ -69,6 +70,9 @@ function Video({
   const video_Quality = useRef("auto");
   const activeTimeOnPageRef = useRef(0);
 
+  
+  const remote=useMediaRemote();
+
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
     return (
@@ -82,6 +86,7 @@ function Video({
       }
     );
   };
+
 
   const myInfo = useRef<myInfoType>(myInfoInitialize());
 
@@ -349,14 +354,19 @@ function Video({
     if (videoRef.current && myInfo.current) {
       
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
-      const tracks = videoRef.current.state.textTracks;
+      const tracks = videoRef.current.textTracks;
       
-      for (let i = 0; i < tracks.length; i++) {
-        tracks[i].mode =
-          tracks[i].label === myInfo.current.lastSubtitle
-            ? "showing"
-            : "disabled";
-      }
+      // textTracks[3].mode='disabled'
+      
+      remote.changeTextTrackMode(1,'disabled');
+      
+      // for (let i = 0; i < tracks.length; i++) {
+      //   if(tracks[i].mode==='showing'){
+      //     // videoRef.current.remoteControl.changeTextTrackMode(i,'disabled');
+      //     console.log(videoRef.current.textTracks,"rtrrrrr<<<<<<<<<<<");
+      //   }
+      // }
+      console.log(videoRef.current.textTracks);
       const audioTracks=videoRef.current.state.audioTracks;
       
       // console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
@@ -365,6 +375,7 @@ function Video({
           previousAudioModeRef.current=audioTracks[i].language
         }
       }
+      
       
     }
     
@@ -503,9 +514,40 @@ function Video({
   const handleOnLoadedMetaData = () => {
     
   };
+  // const disableAllSubtitle=()=>{
+  //   const player=videoRef.current;
+  //   const currentSubtitle=player?.textTracks.toArray().find((track)=>track.mode==='showing');
+  //   if(currentSubtitle){
+  //     currentSubtitle.mode='disabled';
+  //   }
+    
+
+  // }
+  // const addLastWatchedSubtitle=()=>{
+  //   const player=videoRef.current;
+  //   const currentSubtitle=player?.textTracks.toArray().find((track)=>track.language===myInfo.current.lastSubtitle);
+  //   if(currentSubtitle){
+  //     currentSubtitle.mode='showing';
+  //     previousSubtitleModeRef.current=currentSubtitle.language;
+  //   }
+  // }
+  const textTrackRef=useRef("first")
   const handleTextTrackChange=()=>{
-    
-    
+    if(textTrackRef.current==="first"){
+      const textTracks=videoRef?.current?.textTracks||[];
+      for(let i=0;i<textTracks?.length;i++){
+        if(textTracks[i]?.language===myInfo.current.lastSubtitle){
+          textTracks[i].mode='showing';
+        }
+        else{
+          textTracks[i].mode='disabled';
+        }
+      }
+      textTrackRef.current="second";
+    }
+    // disableAllSubtitle();
+    // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+    // addLastWatchedSubtitle();
     if(isPlaying.current){
       addSegment();
     }
@@ -545,8 +587,7 @@ function Video({
           src="https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
           // src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "1280px", height: "720px" }}
-          onTextTrackChange={handleTextTrackChange}
-          onAudioTrackChange={handleonAudioTrackChange}
+          
           // src={[
           //   {
           //     src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -583,6 +624,9 @@ function Video({
           onTimeUpdate={handleTimeUpdate}
           crossOrigin
           playsInline={false}
+          onTextTrackChange={handleTextTrackChange}
+          onAudioTrackChange={handleonAudioTrackChange}
+          
         >
           <MediaProvider>
             
