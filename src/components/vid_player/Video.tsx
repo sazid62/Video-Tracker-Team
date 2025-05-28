@@ -37,6 +37,10 @@ interface videoProps {
 
   seekForward?: boolean;
   heatMap?: HeatmapProps;
+  //added by rabby
+  uniqueTimeWatch: boolean;
+  volumeRestore: boolean;
+  subtitleRestore:boolean;
 }
 
 interface Segment {
@@ -77,6 +81,9 @@ function Video({
     strokeColor: "darkred",
     className: "rounded-lg shadow",
   },
+  uniqueTimeWatch = false,
+  volumeRestore = false,
+  subtitleRestore=false,
 }: videoProps) {
   const videoRef = useRef<MediaPlayerInstance>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
@@ -119,6 +126,9 @@ function Video({
   const startWatched = useRef(myInfo.current.lastWatchedTime);
 
   const getUniqueWatchTime = () => {
+    if (uniqueTimeWatch === false) {
+      return -1;
+    }
     let end: number = -1;
     const segmentFlooredArray = myInfo.current.array.map(
       (item: { start: number; end: number }) => {
@@ -227,13 +237,17 @@ function Video({
     };
 
     console.log("Adding Segment: ", myInfo.current);
-    myInfo.current.lastSubtitle = previousSubtitleModeRef.current;
+    if(subtitleRestore===true){
+      myInfo.current.lastSubtitle = previousSubtitleModeRef.current;
+    }
     myInfo.current.lastWatchedTime =
       getCurrentTime() > 0 ? getCurrentTime() : lastWatched.current;
     myInfo.current.lastVideoQuality = video_Quality.current;
     myInfo.current.lastPlayBackSpeed = playBackSpeed.current;
-    myInfo.current.lastVolume = lastVolume.current;
-    myInfo.current.isMuted = muteStatus.current;
+    if (volumeRestore === true) {
+      myInfo.current.lastVolume = lastVolume.current;
+      myInfo.current.isMuted = muteStatus.current;
+    }
     lastWatched.current = getCurrentTime() + 1;
     startWatched.current = getCurrentTime() + 1;
     seekStatus.current = "noseeked";
@@ -246,6 +260,9 @@ function Video({
   };
 
   const generateHeatmap = () => {
+    if (heatMap.show === false) {
+      return [];
+    }
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
     const allWatcherArray: { start: number; end: number }[] = [];
 
@@ -281,8 +298,10 @@ function Video({
     startWatched.current =
       startWatched.current !== 0 ? getCurrentTime() + 1 : getCurrentTime();
     lastWatched.current = getCurrentTime();
-    lastVolume.current = videoRef.current?.volume as number;
-    muteStatus.current = videoRef.current?.muted as boolean;
+    if (volumeRestore === true) {
+      lastVolume.current = videoRef.current?.volume as number;
+      muteStatus.current = videoRef.current?.muted as boolean;
+    }
   };
 
   const handlePause = () => {
@@ -322,7 +341,6 @@ function Video({
         seekStatus.current = "mouse";
       }
 
-      
       addSegment();
     }
 
@@ -434,6 +452,9 @@ function Video({
     }
   };
   const selectLastVolume = () => {
+    if (volumeRestore === false) {
+      return;
+    }
     if (videoRef.current) {
       videoRef.current.muted = myInfo.current.isMuted;
       videoRef.current.volume = myInfo.current.lastVolume;
@@ -584,8 +605,10 @@ function Video({
     if (isPlaying.current) {
       addSegment();
     }
-    lastVolume.current = videoRef.current?.volume as number;
-    muteStatus.current = videoRef.current?.muted as boolean;
+    if(volumeRestore===true){
+      lastVolume.current = videoRef.current?.volume as number;
+      muteStatus.current = videoRef.current?.muted as boolean;
+    }
   };
 
   const handleRateChange = () => {
@@ -621,7 +644,8 @@ function Video({
   // }
   const textTrackRef = useRef("first");
   const handleTextTrackChange = () => {
-    if (textTrackRef.current === "first") {
+    
+    if (textTrackRef.current === "first" && subtitleRestore) {
       const textTracks = videoRef?.current?.textTracks || [];
       for (let i = 0; i < textTracks?.length; i++) {
         if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
@@ -730,9 +754,11 @@ function Video({
       </div>
 
       <div className="flex flex-col items-start gap-4">
-        <div className="text-green-600 text-xl font-semibold">
-          {getUniqueWatchTime()} seconds unique viewed
-        </div>
+        {uniqueTimeWatch && (
+          <div className="text-green-600 text-xl font-semibold">
+            {getUniqueWatchTime()} seconds unique viewed
+          </div>
+        )}
         <div className=" text-red-600 text-xl font-semibold">
           {pageStayTime} second stayed on this page
         </div>
