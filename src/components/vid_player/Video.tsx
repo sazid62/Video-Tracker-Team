@@ -19,13 +19,24 @@ import Heatmap from "../Heatmap";
 
 import TimeSliderComponent from "./TimeSliderComponent";
 
+interface HeatmapProps {
+  show?: boolean;
+  color?: string;
+  height?: number | string;
+  className?: string;
+  strokeColor?: string;
+  gradientId?: string;
+}
 interface videoProps {
   video_id?: number;
   video_src?: string;
   watchIntervalTime?: number;
   onTabChange?: {
-    pause: boolean;
+    videoPause: boolean;
   };
+
+  seekForward?: boolean;
+  heatMap?: HeatmapProps;
 }
 
 interface Segment {
@@ -56,7 +67,16 @@ function Video({
   video_id = 12,
   video_src = "https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8",
   watchIntervalTime = 30,
-  onTabChange = { pause: false },
+  onTabChange = { videoPause: false },
+  seekForward = false,
+
+  heatMap = {
+    show: true,
+    color: "red",
+    height: 100,
+    strokeColor: "darkred",
+    className: "rounded-lg shadow",
+  },
 }: videoProps) {
   const videoRef = useRef<MediaPlayerInstance>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
@@ -273,7 +293,7 @@ function Video({
   };
 
   const blockSeekingForward = () => {
-    if (videoRef.current) {
+    if (videoRef.current && seekForward === true) {
       videoRef.current.currentTime =
         getCurrentTime() <= myInfo.current.maxWatchPosition
           ? getCurrentTime()
@@ -699,7 +719,7 @@ function Video({
               timeSlider: (
                 <div className="relative w-full group mb-6 h-4">
                   <div className="absolute bottom-full left-0 w-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                    <Heatmap pv={HeatMapArray} />
+                    <Heatmap pv={HeatMapArray} {...heatMap} />
                   </div>
                   <TimeSliderComponent />
                 </div>

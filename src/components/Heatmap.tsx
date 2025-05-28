@@ -3,37 +3,49 @@ import { AreaChart, Area, ResponsiveContainer } from "recharts";
 
 interface HeatmapProps {
   pv: number[];
+  show?: boolean;
+  color?: string;
+  height?: number | string;
+  className?: string;
+  strokeColor?: string;
+  gradientId?: string;
 }
 
-export default function Heatmap({ pv }: HeatmapProps) {
-  // Massage the data into the expected format for Recharts
+export default function Heatmap({
+  pv,
+  show = true,
+  color = "#8884d8",
+  height = 48,
+  className = "",
+  strokeColor = "#8884d8",
+  gradientId = "colorUv",
+}: HeatmapProps) {
+  if (!show) return null;
+
   const data = pv.map((val, i) => ({ name: i, views: val }));
+
   return (
-    <div className="h-12 mb-4">
+    <div
+      className={`mb-4 ${className}`}
+      style={{ height: typeof height === "number" ? `${height}px` : height }}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          width={500}
-          height={400}
           data={data}
-          margin={{
-            top: 0,
-            right: 0,
-            left: 0,
-            bottom: 0,
-          }}
+          margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
         >
           <defs>
-            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+              <stop offset="95%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
           <Area
             type="monotone"
             dataKey="views"
-            stroke="#8884d8"
+            stroke={strokeColor}
             fillOpacity={1}
-            fill="url(#colorUv)"
+            fill={`url(#${gradientId})`}
           />
         </AreaChart>
       </ResponsiveContainer>
