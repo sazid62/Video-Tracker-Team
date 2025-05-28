@@ -1,12 +1,15 @@
+import React from "react";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
+
 interface HeatmapProps {
   pv: number[];
 }
+
 export default function Heatmap({ pv }: HeatmapProps) {
   // Massage the data into the expected format for Recharts
   const data = pv.map((val, i) => ({ name: i, views: val }));
   return (
-    <div className="h-12  z-[-10]">
+    <div className="h-12 mb-4">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           width={500}
