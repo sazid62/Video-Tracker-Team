@@ -24,7 +24,7 @@ function App() {
         video_src={
           "https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
         }
-        watchIntervalTime={15}
+        watchIntervalTime={5}
         onTabChange={{
           pause: true,
         }}

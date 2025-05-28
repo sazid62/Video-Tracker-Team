@@ -1,12 +1,14 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import { useMediaRemote, useMediaStore, type VideoQuality } from "@vidstack/react";
-import { type MediaTextTracksChangeEvent } from "@vidstack/react";
+import {
+  useMediaRemote,
+  useMediaStore,
+  type VideoQuality,
+} from "@vidstack/react";
 import {
   MediaPlayer,
   MediaPlayerInstance,
   MediaProvider,
-  
 } from "@vidstack/react";
 import {
   DefaultVideoLayout,
@@ -45,8 +47,9 @@ interface myInfoType {
   lastSubtitle: string;
   lastVideoQuality: number;
   lastPlayBackSpeed: number;
-  lastVolume:number;
-  isMuted:boolean;
+  lastVolume: number;
+  isMuted: boolean;
+  maxWatchPosition: number;
 }
 
 function Video({
@@ -60,8 +63,7 @@ function Video({
   const previousSubtitleModeRef = useRef("no");
   const previousAudioModeRef = useRef("no");
   const lastWatched = useRef(0);
-  
-  
+
   const isPlaying = useRef(false);
   const screen_mode = useRef("normal");
   const lastVolume = useRef(1);
@@ -72,8 +74,7 @@ function Video({
   const video_Quality = useRef(720);
   const activeTimeOnPageRef = useRef(0);
 
-  
-  const remote=useMediaRemote();
+  const remote = useMediaRemote();
 
   const myInfoInitialize = (): myInfoType => {
     const all = JSON.parse(localStorage.getItem("video-editor") || "[]");
@@ -87,13 +88,12 @@ function Video({
         lastSubtitle: "no",
         lastVideoQuality: 720,
         lastPlayBackSpeed: 1,
-        lastVolume:1,
-        isMuted:false,
+        lastVolume: 1,
+        isMuted: false,
+        maxWatchPosition: 0,
       }
     );
   };
-
-
 
   const myInfo = useRef<myInfoType>(myInfoInitialize());
   const startWatched = useRef(myInfo.current.lastWatchedTime);
@@ -169,11 +169,12 @@ function Video({
     if (startWatched.current >= lastWatched.current) {
       return;
     }
+
     seekStatus.current = "noseeked";
-    console.log(
-      videoRef.current?.state.lastKeyboardAction,
-      "gooooooooooooooooooood"
-    );
+    // console.log(
+    //   videoRef.current?.state.lastKeyboardAction,
+    //   "gooooooooooooooooooood"
+    // );
     if (
       videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
       videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
@@ -207,13 +208,14 @@ function Video({
 
     console.log("Adding Segment: ", myInfo.current);
     myInfo.current.lastSubtitle = previousSubtitleModeRef.current;
-    myInfo.current.lastWatchedTime = lastWatched.current;
+    myInfo.current.lastWatchedTime =
+      getCurrentTime() > 0 ? getCurrentTime() : lastWatched.current;
     myInfo.current.lastVideoQuality = video_Quality.current;
     myInfo.current.lastPlayBackSpeed = playBackSpeed.current;
-    myInfo.current.lastVolume=lastVolume.current;
-    myInfo.current.isMuted=muteStatus.current;
+    myInfo.current.lastVolume = lastVolume.current;
+    myInfo.current.isMuted = muteStatus.current;
     lastWatched.current = getCurrentTime() + 1;
-    startWatched.current=getCurrentTime()+1;
+    startWatched.current = getCurrentTime() + 1;
     seekStatus.current = "noseeked";
     setDataToLocalStorageFromAddSegment();
   };
@@ -270,6 +272,24 @@ function Video({
     addSegment();
   };
 
+  const blockSeekingForward = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime =
+        getCurrentTime() <= myInfo.current.maxWatchPosition
+          ? getCurrentTime()
+          : Math.min(lastWatched.current, myInfo.current.maxWatchPosition);
+      // console.log({
+      //   maxWatched: myInfo.current.maxWatchPosition,
+      //   lastPost: lastWatched.current,
+      //   current: videoRef.current.currentTime,
+      //   result:
+      //     getCurrentTime() <= myInfo.current.maxWatchPosition
+      //       ? getCurrentTime()
+      //       : Math.min(lastWatched.current, myInfo.current.maxWatchPosition),
+      // });
+    }
+  };
+
   const handleSeeking = () => {
     console.log("Before seekd user at:  ", lastWatched.current);
 
@@ -278,18 +298,22 @@ function Video({
       getCurrentTime() > lastWatched.current &&
       lastWatched.current - startWatched.current >= 1
     ) {
-      // console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
       if (seekStatus.current === "noseeked") {
         seekStatus.current = "mouse";
       }
+
+      console.log("Rabbby fault");
       addSegment();
     }
 
     console.log("Seeking to time:", getCurrentTime());
+
+    blockSeekingForward();
   };
 
   const handleSeeked = () => {
     // isPlaying.current = false;
+    blockSeekingForward();
     console.log("Seeked to time:", getCurrentTime());
     console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
     startWatched.current = getCurrentTime() + 1;
@@ -344,18 +368,25 @@ function Video({
     }
 
     if (!videoRef.current?.state.seeking) {
+      // console.log("Updating");
       lastWatched.current = getCurrentTime();
+      myInfo.current.maxWatchPosition = Math.max(
+        myInfo.current.maxWatchPosition,
+        getCurrentTime()
+      );
+
       // console.log(startWatched.current, lastWatched.current, isPlaying.current);
       if (
-        lastWatched.current - startWatched.current >= watchIntervalTime &&
-        isPlaying.current && videoRef.current
+        Math.abs(lastWatched.current - startWatched.current) >=
+        watchIntervalTime
       ) {
-        console.log("Timeupdate********************************************************************************************");
-        console.log("LastWatched",lastWatched.current);
-        console.log("startWatched",startWatched.current);
+        console.log(
+          "Timeupdate********************************************************************************************"
+        );
+        console.log("LastWatched", lastWatched.current);
+        console.log("startWatched", startWatched.current);
         addSegment();
       }
-
     }
 
     setHeatMapArray(generateHeatmap());
@@ -382,26 +413,25 @@ function Video({
       videoRef.current.playbackRate = myInfo.current.lastPlayBackSpeed;
     }
   };
-  const selectLastVolume=()=>{
-    if(videoRef.current){
-      videoRef.current.muted=myInfo.current.isMuted;
-      videoRef.current.volume=myInfo.current.lastVolume;
+  const selectLastVolume = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = myInfo.current.isMuted;
+      videoRef.current.volume = myInfo.current.lastVolume;
     }
-  }
-  
+  };
+
   const handleLoadedData = () => {
     selectLastVideoQuality();
     selectLastPlayBackSpeed();
     selectLastVolume();
     // selectLastSubtitle();
     if (videoRef.current && myInfo.current) {
+      console.log(myInfo.current.lastWatchedTime, "Rabby kufa");
       videoRef.current.currentTime = myInfo.current.lastWatchedTime;
       const tracks = videoRef.current.textTracks;
-      
+
       // textTracks[3].mode='disabled'
-      
-      
-      
+
       // for (let i = 0; i < tracks.length; i++) {
       //   if(tracks[i].mode==='showing'){
       //     // videoRef.current.remoteControl.changeTextTrackMode(i,'disabled');
@@ -409,15 +439,14 @@ function Video({
       //   }
       // }
       console.log(videoRef.current.textTracks);
-      const audioTracks=videoRef.current.state.audioTracks;
-      
+      const audioTracks = videoRef.current.state.audioTracks;
+
       // console.log(audioTracks,"<<<<<<<<<<<<<<<<<<<<")
       for (let i = 0; i < audioTracks.length; i++) {
         if (audioTracks[i].selected === true) {
           previousAudioModeRef.current = audioTracks[i].language;
         }
       }
-      
     }
 
     startCountingPageStayTime();
@@ -553,17 +582,13 @@ function Video({
     video_Quality.current = quality?.height as number;
   };
 
-
-  const handleOnLoadedMetaData = () => {
-    
-  };
+  const handleOnLoadedMetaData = () => {};
   // const disableAllSubtitle=()=>{
   //   const player=videoRef.current;
   //   const currentSubtitle=player?.textTracks.toArray().find((track)=>track.mode==='showing');
   //   if(currentSubtitle){
   //     currentSubtitle.mode='disabled';
   //   }
-    
 
   // }
   // const addLastWatchedSubtitle=()=>{
@@ -574,24 +599,23 @@ function Video({
   //     previousSubtitleModeRef.current=currentSubtitle.language;
   //   }
   // }
-  const textTrackRef=useRef("first")
-  const handleTextTrackChange=()=>{
-    if(textTrackRef.current==="first"){
-      const textTracks=videoRef?.current?.textTracks||[];
-      for(let i=0;i<textTracks?.length;i++){
-        if(textTracks[i]?.language===myInfo.current.lastSubtitle){
-          textTracks[i].mode='showing';
-        }
-        else{
-          textTracks[i].mode='disabled';
+  const textTrackRef = useRef("first");
+  const handleTextTrackChange = () => {
+    if (textTrackRef.current === "first") {
+      const textTracks = videoRef?.current?.textTracks || [];
+      for (let i = 0; i < textTracks?.length; i++) {
+        if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
+          textTracks[i].mode = "showing";
+        } else {
+          textTracks[i].mode = "disabled";
         }
       }
-      textTrackRef.current="second";
+      textTrackRef.current = "second";
     }
     // disableAllSubtitle();
     // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
     // addLastWatchedSubtitle();
-    if(isPlaying.current){
+    if (isPlaying.current) {
       addSegment();
     }
     const textTrack = videoRef.current?.textTracks || [];
@@ -629,7 +653,6 @@ function Video({
           src={video_src}
           // src={video_src[Object.keys(video_src)[0]]}
           style={{ width: "1280px", height: "720px" }}
-          
           // src={[
           //   {
           //     src: "https://files.vidstack.io/sprite-fight/1080p.mp4",
@@ -668,7 +691,6 @@ function Video({
           playsInline={false}
           onTextTrackChange={handleTextTrackChange}
           onAudioTrackChange={handleonAudioTrackChange}
-          
         >
           <MediaProvider></MediaProvider>
           <DefaultVideoLayout
