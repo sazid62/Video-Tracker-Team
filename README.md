@@ -400,6 +400,7 @@ const handleTextTrackChange = () => {
   }
   previousSubtitleModeRef.current = "no";
 };
+<MediaPlayer onTextTrackChange={handleTextTrackChange} ></MediaPlayer>;
 
 ```
 
@@ -411,7 +412,7 @@ When volume is changed onVolumeChange is called
 For volume change two state need to track volume and mute.
 I used lastVolume and muteStatus for this.
 Update volume and mute variable when volume change event trigger.
-```
+```bash
 const selectLastVolume = () => {
   if (volumeRestore === false) {
     return;
@@ -422,6 +423,13 @@ const selectLastVolume = () => {
   }
 };
 
+const addSegment = () => {
+  ...
+  selectLastVolume();
+  ...
+};
+
+
 ```
 
 
@@ -430,7 +438,7 @@ const selectLastVolume = () => {
 When seeked with video played it was by mouse of keyboard.
 If "is video seeked by keyboard" statement true then seeked by keyboard otherwise seeked by mouse.
 
-```
+```bash
 const addSegment = () => {
   ...
   if (
@@ -453,7 +461,7 @@ const addSegment = () => {
 
 When audio change onAudioTrackChange is triggered.
 
-```
+```bash
 const handleonAudioTrackChange = () => {
   const audiotrack = videoRef.current?.audioTracks || [];
   for (let i = 0; i < audiotrack?.length; i++) {
@@ -464,7 +472,7 @@ const handleonAudioTrackChange = () => {
   }
   previousAudioModeRef.current = "no";
 };
-<MediaPlayer onAudioTrackChange={handleonAudioTrackChange}></MediaPlayer>;
+<MediaPlayer onAudioTrackChange={handleonAudioTrackChange} ></MediaPlayer>;
 
 
 ```
@@ -476,7 +484,7 @@ Start and end time is floored and sorted in start in ascending order and end in 
 Then for first value a new variable end is set.
 Then for next values if item.start > end then full segment is added else segment after end is added in answer
 
-```
+```bash
 const getUniqueWatchTime = () => {
   let end: number = -1;
   const segmentFlooredArray = myInfo.current.array.map(
