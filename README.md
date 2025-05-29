@@ -192,7 +192,21 @@ If "is video seeked by keyboard" statement true then seeked by keyboard otherwis
     }
 ```
 
-## multiaudio 
+## multiaudio change
+
+when audio change onAudioTrackChange is triggered
+
+```
+const audiotrack = videoRef.current?.audioTracks || [];
+    for (let i = 0; i < audiotrack?.length; i++) {
+      if (audiotrack[i]?.selected) {
+        previousAudioModeRef.current = audiotrack[i]?.language || "not define";
+        return;
+      }
+    }
+    previousAudioModeRef.current = "no";
+
+```
 
 ## 🧠 Credits
 
