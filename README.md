@@ -112,6 +112,47 @@ For this work i saved the last watch time in local storage for now(lastWatchedTi
 
 When user back in this video and video component render and video is loaded to (onLoadedData event).I set player.currentTime=lastWatchedTime
 
+
+## subtitle change detect and retrive last subtitle enabled in a video
+
+onTextTrackChange in called when subtitle changed.
+
+
+```
+const textTrackRef = useRef("first");
+  const handleTextTrackChange = () => {
+    if (textTrackRef.current === "first" && subtitleRestore &&previousSubtitleModeRef.current!=='no') {
+      const textTracks = videoRef?.current?.textTracks || [];
+      for (let i = 0; i < textTracks?.length; i++) {
+        if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
+          textTracks[i].mode = "showing";
+        } else {
+          textTracks[i].mode = "disabled";
+        }
+      }
+      textTrackRef.current = "second";
+    }
+    // disableAllSubtitle();
+    // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+    // addLastWatchedSubtitle();
+    if (isPlaying.current) {
+      addSegment();
+    }
+    const textTrack = videoRef.current?.textTracks || [];
+    for (let i = 0; i < textTrack?.length; i++) {
+      if (textTrack[i]?.mode === "showing") {
+        previousSubtitleModeRef.current =
+          textTrack[i]?.language || "not define";
+        return;
+      }
+    }
+    previousSubtitleModeRef.current = "no";
+  };
+  ```
+
+ 
+
+
 ## 🧠 Credits
 
 👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause or Network Issue, Page Time, Playback Speed, Unique Time, Screen Mode,

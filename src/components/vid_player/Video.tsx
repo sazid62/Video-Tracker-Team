@@ -643,7 +643,7 @@ function Video({
   // }
   const textTrackRef = useRef("first");
   const handleTextTrackChange = () => {
-    if (textTrackRef.current === "first" && subtitleRestore) {
+    if (textTrackRef.current === "first" && subtitleRestore &&previousSubtitleModeRef.current!=='no') {
       const textTracks = videoRef?.current?.textTracks || [];
       for (let i = 0; i < textTracks?.length; i++) {
         if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
