@@ -26,7 +26,7 @@ export default function Heatmap({
 
   return (
     <div
-      className={`mb-4 ${className}`}
+      className={` ${className}`}
       style={{ height: typeof height === "number" ? `${height}px` : height }}
     >
       <ResponsiveContainer width="100%" height="100%">
