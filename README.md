@@ -1,16 +1,10 @@
 # 🎥 Video Analytics
 
-> Advanced video player analytics with features like heatmaps, seek control, resume capabilities, and full VidStack integration.
-
----
 
 ## 🧩 Overview
 
 **Video Analytics** is a feature-rich React-based video component powered by **VidStack** that enables developers to deeply track and analyze user behavior during video playback.
 
-This project is ideal for platforms that need insights into how users interact with videos—such as e-learning, OTT, or media-heavy applications.
-
----
 
 ## 🚀 Features
 
@@ -52,62 +46,12 @@ This project is ideal for platforms that need insights into how users interact w
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/video-analytics.git
-cd video-analytics
+git clone https://github.com/sazid62/Video-Tracker-Team.git
+cd Video-Tracker-Team
 
 # Install dependencies
 npm install
-
-# Start dev server
 npm run dev
-🧑‍💻 How to Use the Components
-🔹 Video Component
-Import the Video component:
-
-tsx
-Copy
-Edit
-import { Video } from './components/Video';
-Basic usage:
-
-tsx
-Copy
-Edit
-<Video
-  src="/assets/sample-video.m3u8"
-  heatMap={true}
-  tabPause={true}
-  blockSeek={true}
-/>
-Props:
-Prop	Type	Default	Description
-heatMap	boolean	false	Enables the heatmap view on the timeline.
-tabPause	boolean	false	Video will pause when tab is inactive.
-blockSeek	boolean	false	Prevents users from skipping ahead unless they’ve already watched it.
-
-✅ All features are configurable, allowing full control over the video analytics experience.
-
-📊 Heatmap Usage
-If you want to enable the Heatmap feature, simply pass the heatMap prop:
-
-tsx
-Copy
-Edit
-<Video heatMap={true} />
-The heatmap colors reflect intensity of engagement across video segments.
-
-🌐 Deployment
-If deployed, add your live demo URL here.
-
-🧪 Quality & Linting
-ESLint configured
-
-React hooks linting
-
-Tailwind animations via tw-animate-css
-
-🖼️ Demo Screenshots
-Add screenshots or screen recordings here if available.
 
 🧠 Credits
 👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause, Page Time, Playback Resume
