@@ -172,7 +172,7 @@ If "is video seeked by keyboard" statement true then seeked by keyboard otherwis
     if (videoRef.current?.state.seeking && seekStatus.current === "noseeked") {
       seekStatus.current = "mouse";
     }
-    ```
+```
 
 ## 🧠 Credits
 
