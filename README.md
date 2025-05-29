@@ -110,7 +110,11 @@ function App() {
 
 For this work i saved the last watch time in local storage for now(lastWatchedTime).
 
-When user back in this video and video component render and video is loaded to (onLoadedData event).I set player.currentTime=lastWatchedTime
+When user back in this video and video component render and video is loaded to (onLoadedData event).
+I set player.currentTime=lastWatchedTime.
+```
+videoRef.current.currentTime = myInfo.current.lastWatchedTime;
+```
 
 ## subtitle change detect and retrive last subtitle enabled in a video
 
@@ -148,12 +152,26 @@ const textTrackRef = useRef("first");
   };
 ```
 
+
+
 ## Volume change detect and retrive last volume
 
 When volume is changed onVolumeChange is called
 For volume change two state need to track volume and mute.
 I used lastVolume and muteStatus for this.
 update volume and mute variable when volume change event trigger.
+```
+const selectLastVolume = () => {
+    if (volumeRestore === false) {
+      return;
+    }
+    if (videoRef.current) {
+      videoRef.current.muted = myInfo.current.isMuted;
+      videoRef.current.volume = myInfo.current.lastVolume;
+    }
+  };
+```
+
 
 ## keyboard/ mouse seek
 
@@ -174,9 +192,10 @@ If "is video seeked by keyboard" statement true then seeked by keyboard otherwis
     }
 ```
 
+## multiaudio 
+
 ## 🧠 Credits
 
 👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause or Network Issue, Page Time, Playback Speed, Screen Mode,
 
 👨‍💻 Rabby – Volume, Subtitles With Last left selection, Keyboard /Mouse Seek, Multi-Audio, Playback Resume,Unique Time
-````
