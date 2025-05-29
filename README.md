@@ -112,6 +112,95 @@ For this work i saved the last watch time in local storage for now(lastWatchedTi
 
 When user back in this video and video component render and video is loaded to (onLoadedData event).I set player.currentTime=lastWatchedTime
 
+## Resume Video Quality from Last Watched
+
+```
+const selectLastVideoQuality = () => {
+  const player = videoRef.current;
+  const qualitiesArray = player?.qualities?.toArray();
+
+  const lastQuality = qualitiesArray?.find(
+    (q) => q.height === myInfo.current.lastVideoQuality
+  );
+
+  if (lastQuality) {
+    lastQuality.selected = true;
+    console.log(`[Quality] Resuming last watched quality: ${lastQuality.height}p`);
+  } else {
+    console.warn("[Quality] Last watched video quality not found");
+  }
+};
+
+const handleLoadedData = () => {
+  console.log("[Player] Video loaded. Selecting last watched quality...");
+  selectLastVideoQuality();
+};
+
+const handleQualityChange = (quality: VideoQuality | null) => {
+  if (quality) {
+    video_Quality.current = quality.height;
+    console.log(`[Quality] Changed to: ${quality.height}p`);
+  }
+};
+
+// Usage in component
+<MediaPlayer
+  onQualityChange={handleQualityChange}
+  onLoadedData={handleLoadedData}
+/>
+
+```
+
+## Watcher Active Time on Page
+
+```
+const activeTimeIntervalRef = useRef<NodeJS.Timeout>();
+const [pageStayTime, setPageStayTime] = useState(0);
+
+const startCountingPageStayTime = () => {
+  if (activeTimeIntervalRef.current)
+    clearInterval(activeTimeIntervalRef.current);
+
+  activeTimeIntervalRef.current = setInterval(() => {
+    activeTimeOnPageRef.current += 1;
+    setPageStayTime(activeTimeOnPageRef.current);
+    localStorage.setItem("stayTime", activeTimeOnPageRef.current.toString());
+    console.log(`[Page Stay] Active time on page: ${activeTimeOnPageRef.current}s`);
+  }, 1000);
+};
+
+  const handleLoadedData = () => {
+    console.log("[Player] Video data loaded. Starting active time counter...");
+    startCountingPageStayTime();
+  };
+
+
+useEffect(() => {
+
+  const handleFocus = () => {
+    console.log("[Window] Focus regained. Resuming active time counter...");
+    startCountingPageStayTime();
+  };
+
+  const handleBlur = () => {
+    console.log("[Window] Focus lost. Pausing active time counter...");
+    clearInterval(activeTimeIntervalRef.current);
+  };
+
+  window.addEventListener("focus", handleFocus);
+  window.addEventListener("blur", handleBlur);
+
+
+  return () => {
+    window.removeEventListener("focus", handleFocus);
+    window.removeEventListener("blur", handleBlur);
+  };
+}, []);
+
+<MediaPlayer onLoadedData={handleLoadedData} />
+
+```
+
 ## 🧠 Credits
 
 👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause or Network Issue, Page Time, Playback Speed, Unique Time, Screen Mode,
