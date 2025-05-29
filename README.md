@@ -160,7 +160,7 @@ update volume and mute variable when volume change event trigger.
 when seeked with video played it was by mouse of keyboard.
 If "is video seeked by keyboard" statement true then seeked by keyboard otherwise seeked by mouse.
 
-````
+```
     if (
       videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
       videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
