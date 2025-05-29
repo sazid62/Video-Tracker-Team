@@ -106,6 +106,43 @@ function App() {
 | `strokeColor` | `string` | `"darkred"` | Outline color |
 | `gradientId` | `string` | `undefined` | Custom SVG gradient ID |
 
+## Add Segment Function: Instantly Store Current Watch Segment of user to LoaclHost
+
+```
+const addSegment = () => {
+    if (startWatched.current >= lastWatched.current) {
+      return; //Skip Invalid segment Like {start: 12s , end: 5s}
+    }
+
+
+    myInfo.current = {
+      ...myInfo.current,
+      array: [
+        ...myInfo.current.array,
+        {
+          start: startWatched.current,
+          end: lastWatched.current,
+          screen_mode: screen_mode.current,
+          current_volume: lastVolume.current,
+          isMuted: muteStatus.current,
+          seekByMouseOrKey: seekStatus.current,
+          subtitleLanguage: previousSubtitleModeRef.current,
+          playBackSpeed: playBackSpeed.current,
+          videoQuality: video_Quality.current,
+          selectedAudio: previousAudioModeRef.current,
+        },
+      ],
+    };
+
+   //New Segment Start
+    lastWatched.current = getCurrentTime();
+    startWatched.current = getCurrentTime();
+
+    setDataToLocalStorageFromAddSegment(); //Instantly send data to backend / LocalStorage
+  };
+
+```
+
 ## User Start with last watched time
 
 For this work i saved the last watch time in local storage for now(lastWatchedTime).
