@@ -30,7 +30,7 @@ function App() {
           videoPause: true,
         }}
         heatMap={{
-          show: false,
+          show: true,
           color: "#8884d8",
           height: 48,
           className: "",
