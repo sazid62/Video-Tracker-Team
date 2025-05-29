@@ -643,7 +643,7 @@ function Video({
   // }
   const textTrackRef = useRef("first");
   const handleTextTrackChange = () => {
-    if (textTrackRef.current === "first" && subtitleRestore &&previousSubtitleModeRef.current!=='no') {
+    if (textTrackRef.current === "first" && subtitleRestore ) {
       const textTracks = videoRef?.current?.textTracks || [];
       for (let i = 0; i < textTracks?.length; i++) {
         if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
@@ -717,7 +717,7 @@ function Video({
           // ]}
           className="mb-2"
           // onKeyDown={(e)=>{console.log("Down")}}
-
+          
           onQualityChange={handleQualityChange}
           onPlay={handlePlay}
           onVolumeChange={handleVolumeChange}
