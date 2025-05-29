@@ -13,7 +13,7 @@
 | 🔥 Heatmap                    | Displays view heatmap per segment. Color-coded versions supported. Toggle ON/OFF via props.                                                          | ✅ Done     |
 | ▶️ Resume Capabilities        | Resumes video from the last watched position.                                                                                                         | ✅ Done     |
 | ⏱️ Unique Watch Time          | Tracks total unique time watched per user.                                                                                                            | ✅ Done     |
-| 🕒 Total Watch Time           | Aggregates total watch time across sessions.                                                                                                          | ⏳ In Progress |
+| 🕒 Total Watch Time           | Aggregates total watch time across sessions.                                                                                                          | ✅ Done  |
 | ⏮️ Seek Control              | Prevents forward seeking. Rewind allowed. Configurable via props.                                                                                     | ✅ Done     |
 | 🪟 Tab Visibility Control     | Pauses or continues video on tab switch. Fully configurable.                                                                                          | ✅ Done     |
 | 📶 Network & Buffer Handling  | Sends real-time network/buffering data to backend.                                                                                                    | ✅ Done     |
@@ -27,7 +27,7 @@
 | 💡 VidStack Integration       | Fully integrated with the powerful VidStack framework.                                                                                                | ✅ Done     |
 | 🧍 Page Stay Duration         | Measures how long users stay on the video page (active/idle).                                                                                          | ✅ Done     |
 | 📺 Quality Persistence        | Remembers selected video quality (480p, 720p, 1080p) across sessions.                                                                                 | ✅ Done     |
-| ⚙️ Feature Toggles            | All major features are toggleable by developer props or UI (WIP).                                                                                      | ⏳ In Progress |
+| ⚙️ Feature Toggles            | All major features are toggleable by developer props or UI (WIP).                                                                                      | ✅ Done  |
 
 ---
 
@@ -113,7 +113,7 @@ For this work i saved the last watch time in local storage for now(lastWatchedTi
 
 When user back in this video and video component render and video is loaded to (onLoadedData event).I set player.currentTime=lastWatchedTime
 
-##🧠 Credits
+## 🧠 Credits
 👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause, Page Time, Playback Resume
 
 👨‍💻 Rabby – Volume, Subtitles, Keyboard/Mouse, Multi-Audio, VidStack Setup
