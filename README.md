@@ -112,16 +112,14 @@ For this work i saved the last watch time in local storage for now(lastWatchedTi
 
 When user back in this video and video component render and video is loaded to (onLoadedData event).I set player.currentTime=lastWatchedTime
 
-
 ## subtitle change detect and retrive last subtitle enabled in a video
 
 onTextTrackChange in called when subtitle changed.
 
-
 ```
 const textTrackRef = useRef("first");
   const handleTextTrackChange = () => {
-    if (textTrackRef.current === "first" && subtitleRestore &&previousSubtitleModeRef.current!=='no') {
+    if (textTrackRef.current === "first" && subtitleRestore ) {
       const textTracks = videoRef?.current?.textTracks || [];
       for (let i = 0; i < textTracks?.length; i++) {
         if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
@@ -148,13 +146,37 @@ const textTrackRef = useRef("first");
     }
     previousSubtitleModeRef.current = "no";
   };
-  ```
+```
 
- 
+## Volume change detect and retrive last volume
 
+When volume is changed onVolumeChange is called
+For volume change two state need to track volume and mute.
+I used lastVolume and muteStatus for this.
+update volume and mute variable when volume change event trigger.
+
+## keyboard/ mouse seek
+
+when seeked with video played it was by mouse of keyboard.
+If "is video seeked by keyboard" statement true then seeked by keyboard otherwise seeked by mouse.
+
+````
+    if (
+      videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
+      videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
+    ) {
+      seekStatus.current = "keyboard";
+      videoRef.current.state.lastKeyboardAction.action = "No";
+    }
+
+    if (videoRef.current?.state.seeking && seekStatus.current === "noseeked") {
+      seekStatus.current = "mouse";
+    }
+    ```
 
 ## 🧠 Credits
 
-👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause or Network Issue, Page Time, Playback Speed, Unique Time, Screen Mode,
+👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause or Network Issue, Page Time, Playback Speed, Screen Mode,
 
-👨‍💻 Rabby – Volume, Subtitles With Last left selection, Keyboard Seek, Mouse Seek, Multi-Audio, Playback Resume,
+👨‍💻 Rabby – Volume, Subtitles With Last left selection, Keyboard /Mouse Seek, Multi-Audio, Playback Resume,Unique Time
+````
