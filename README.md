@@ -55,7 +55,7 @@ npm run dev
 
 ## 🚀 Example Usage
 
-```
+```bash
 import Video from "./components/vid_player/Video";
 
 function App() {
@@ -106,9 +106,135 @@ function App() {
 | `strokeColor` | `string` | `"darkred"` | Outline color |
 | `gradientId` | `string` | `undefined` | Custom SVG gradient ID |
 
-## Add Segment Function: Instantly Store Current Watch Segment of user to LoaclHost
+## Heatmap :
+
+First Create Component Heatmap.tsx
+
+```bash
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
+
+interface HeatmapProps {
+  pv: number[];
+  show?: boolean;
+  color?: string;
+  height?: number | string;
+  className?: string;
+  strokeColor?: string;
+  gradientId?: string;
+}
+
+export default function Heatmap({
+  pv,
+  show = true,
+  color = "#8884d8",
+  height = 48,
+  className = "",
+  strokeColor = "#8884d8",
+  gradientId = "colorUv",
+}: HeatmapProps) {
+  if (!show) return null;
+
+  const data = pv.map((val, i) => ({ name: i, views: val }));
+
+  return (
+    <div
+      className={` ${className}`}
+      style={{ height: typeof height === "number" ? `${height}px` : height }}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={data}
+          margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+              <stop offset="95%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="views"
+            stroke={strokeColor}
+            fillOpacity={1}
+            fill={`url(#${gradientId})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+```
+
+Now In your Component
+
+```bash
+import React, { useState, useRef } from "react";
+import Heatmap from "./Heatmap";
+
+
+interface WatchSegment {
+  start: number;
+  end: number;
+}
+
+export default function VideoWithHeatmap() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const [heatMapData, setHeatMapData] = useState<number[]>([]);
+
+  // Example watch data (replace with your actual logic)
+  const allWatcherSegments: WatchSegment[] = [
+    { start: 1, end: 3 },
+    { start: 2, end: 4 },
+    // ... more segments
+  ];
+
+  const generateHeatmap = (): number[] => {
+    const videoDuration = Math.floor(videoRef.current?.duration || 0);
+    const freqArray = new Array(videoDuration + 1).fill(0);
+
+    console.log("[Heatmap] Generating heatmap for video duration:", videoDuration);
+
+    allWatcherSegments.forEach(({ start, end }) => {
+      const s = Math.floor(start);
+      const e = Math.floor(end);
+      if (s < e) {
+        freqArray[s + 1] += 1;
+        freqArray[e + 1] -= 1;
+        console.log(`[Heatmap] Segment: ${s + 1} to ${e} => +1 at ${s + 1}, -1 at ${e + 1}`);
+      }
+    });
+
+    for (let i = 1; i < freqArray.length; i++) {
+      freqArray[i] += freqArray[i - 1];
+    }
+    freqArray.pop(); // remove the last extra element
+
+    console.log("[Heatmap] Final Frequency Array:", freqArray);
+    return freqArray;
+  };
+
+  const handleLoadedData = () => {
+    console.log("[MediaPlayer] Video data loaded");
+    const heatmap = generateHeatmap();
+    setHeatMapData(heatmap);
+  };
+
+  return (
+    <>
+      <MediaPlayer ref={videoRef} onLoadedData={handleLoadedData} />
+      <Heatmap pv={heatMapData} />
+    </>
+  );
+}
+
 
 ```
+
+## Add Segment Function: Instantly Store Current Watch Segment of user to LoaclHost
+
+```bash
 const addSegment = () => {
     if (startWatched.current >= lastWatched.current) {
       return; //Skip Invalid segment Like {start: 12s , end: 5s}
@@ -151,7 +277,7 @@ When user back in this video and video component render and video is loaded to (
 
 ## Resume Video Quality from Last Watched
 
-```
+```bash
 const selectLastVideoQuality = () => {
   const player = videoRef.current;
   const qualitiesArray = player?.qualities?.toArray();
@@ -190,7 +316,7 @@ const handleQualityChange = (quality: VideoQuality | null) => {
 
 ## Watcher Active Time on Page
 
-```
+```bash
 const activeTimeIntervalRef = useRef<NodeJS.Timeout>();
 const [pageStayTime, setPageStayTime] = useState(0);
 
@@ -242,7 +368,7 @@ useEffect(() => {
 
 onTextTrackChange in called when subtitle changed.
 
-```
+```bash
 const textTrackRef = useRef("first");
   const handleTextTrackChange = () => {
     if (textTrackRef.current === "first" && subtitleRestore ) {
@@ -286,7 +412,7 @@ update volume and mute variable when volume change event trigger.
 when seeked with video played it was by mouse of keyboard.
 If "is video seeked by keyboard" statement true then seeked by keyboard otherwise seeked by mouse.
 
-```
+```bash
     if (
       videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
       videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
