@@ -53,10 +53,12 @@ cd Video-Tracker-Team
 npm install
 npm run dev
 
+```
 
 
 
 ## 🚀 Example Usage
+```
 import Video from "./components/vid_player/Video";
 
 function App() {
@@ -81,6 +83,8 @@ function App() {
     />
   );
 }
+```
+
 ## 🧩 Props Documentation of video component
 | Prop                | Type                      | Default     | Description                                         |
 | ------------------- | ------------------------- | ----------- | --------------------------------------------------- |
