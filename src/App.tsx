@@ -37,7 +37,7 @@ function App() {
           strokeColor: "#8884d8",
           gradientId: "colorUv",
         }}
-        uniqueTimeWatch={false}
+        uniqueTimeWatch={true}
         volumeRestore={true}
         subtitleRestore={true}
       />

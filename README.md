@@ -113,43 +113,42 @@ For this work i saved the last watch time in local storage for now(lastWatchedTi
 When user back in this video and video component render and video is loaded to (onLoadedData event).
 I set player.currentTime=lastWatchedTime.
 ```
-videoRef.current.currentTime = myInfo.current.lastWatchedTime;
+const handleLoadedData=()=>{
+  videoRef.current.currentTime = myInfo.current.lastWatchedTime;
+}
+
+<MediaPlayer onLoadedData={handleLoadedData}></MediaPlayer>;
 ```
 
 ## subtitle change detect and retrive last subtitle enabled in a video
 
-onTextTrackChange in called when subtitle changed.
+onTextTrackChange is called when subtitle changed.
 
 ```
 const textTrackRef = useRef("first");
-  const handleTextTrackChange = () => {
-    if (textTrackRef.current === "first" && subtitleRestore ) {
-      const textTracks = videoRef?.current?.textTracks || [];
-      for (let i = 0; i < textTracks?.length; i++) {
-        if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
-          textTracks[i].mode = "showing";
-        } else {
-          textTracks[i].mode = "disabled";
-        }
-      }
-      textTrackRef.current = "second";
-    }
-    // disableAllSubtitle();
-    // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-    // addLastWatchedSubtitle();
-    if (isPlaying.current) {
-      addSegment();
-    }
-    const textTrack = videoRef.current?.textTracks || [];
-    for (let i = 0; i < textTrack?.length; i++) {
-      if (textTrack[i]?.mode === "showing") {
-        previousSubtitleModeRef.current =
-          textTrack[i]?.language || "not define";
-        return;
+const handleTextTrackChange = () => {
+  if (textTrackRef.current === "first" && subtitleRestore) {
+    const textTracks = videoRef?.current?.textTracks || [];
+    for (let i = 0; i < textTracks?.length; i++) {
+      if (textTracks[i]?.language === myInfo.current.lastSubtitle) {
+        textTracks[i].mode = "showing";
+      } else {
+        textTracks[i].mode = "disabled";
       }
     }
-    previousSubtitleModeRef.current = "no";
-  };
+    textTrackRef.current = "second";
+  }
+
+  const textTrack = videoRef.current?.textTracks || [];
+  for (let i = 0; i < textTrack?.length; i++) {
+    if (textTrack[i]?.mode === "showing") {
+      previousSubtitleModeRef.current = textTrack[i]?.language || "not define";
+      return;
+    }
+  }
+  previousSubtitleModeRef.current = "no";
+};
+
 ```
 
 
@@ -159,52 +158,111 @@ const textTrackRef = useRef("first");
 When volume is changed onVolumeChange is called
 For volume change two state need to track volume and mute.
 I used lastVolume and muteStatus for this.
-update volume and mute variable when volume change event trigger.
+Update volume and mute variable when volume change event trigger.
 ```
 const selectLastVolume = () => {
-    if (volumeRestore === false) {
-      return;
-    }
-    if (videoRef.current) {
-      videoRef.current.muted = myInfo.current.isMuted;
-      videoRef.current.volume = myInfo.current.lastVolume;
-    }
-  };
+  if (volumeRestore === false) {
+    return;
+  }
+  if (videoRef.current) {
+    videoRef.current.muted = myInfo.current.isMuted;
+    videoRef.current.volume = myInfo.current.lastVolume;
+  }
+};
+
 ```
 
 
 ## keyboard/ mouse seek
 
-when seeked with video played it was by mouse of keyboard.
+When seeked with video played it was by mouse of keyboard.
 If "is video seeked by keyboard" statement true then seeked by keyboard otherwise seeked by mouse.
 
 ```
-    if (
-      videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
-      videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
-    ) {
-      seekStatus.current = "keyboard";
-      videoRef.current.state.lastKeyboardAction.action = "No";
-    }
+const addSegment = () => {
+  ...
+  if (
+    videoRef.current?.state.lastKeyboardAction?.action === "seekForward" ||
+    videoRef.current?.state.lastKeyboardAction?.action === "seekBackward"
+  ) {
+    seekStatus.current = "keyboard";
+    videoRef.current.state.lastKeyboardAction.action = "No";
+  }
 
-    if (videoRef.current?.state.seeking && seekStatus.current === "noseeked") {
-      seekStatus.current = "mouse";
-    }
+  if (videoRef.current?.state.seeking && seekStatus.current === "noseeked") {
+    seekStatus.current = "mouse";
+  }
+  ...
+};
+    
 ```
 
 ## multiaudio change
 
-when audio change onAudioTrackChange is triggered
+When audio change onAudioTrackChange is triggered.
 
 ```
-const audiotrack = videoRef.current?.audioTracks || [];
-    for (let i = 0; i < audiotrack?.length; i++) {
-      if (audiotrack[i]?.selected) {
-        previousAudioModeRef.current = audiotrack[i]?.language || "not define";
-        return;
+const handleonAudioTrackChange = () => {
+  const audiotrack = videoRef.current?.audioTracks || [];
+  for (let i = 0; i < audiotrack?.length; i++) {
+    if (audiotrack[i]?.selected) {
+      previousAudioModeRef.current = audiotrack[i]?.language || "not define";
+      return;
+    }
+  }
+  previousAudioModeRef.current = "no";
+};
+<MediaPlayer onAudioTrackChange={handleonAudioTrackChange}></MediaPlayer>;
+
+
+```
+
+## Unique time watched by a user calculation
+
+I wrote a function named getUniqueWatchTime that calculate unique time.
+Start and end time is floored and sorted in start in ascending order and end in descending order.
+Then for first value a new variable end is set.
+Then for next values if item.start > end then full segment is added else segment after end is added in answer
+
+```
+const getUniqueWatchTime = () => {
+  let end: number = -1;
+  const segmentFlooredArray = myInfo.current.array.map(
+    (item: { start: number; end: number }) => {
+      return {
+        start: Math.floor(item.start),
+        end: Math.floor(item.end),
+      };
+    }
+  );
+  segmentFlooredArray.sort(
+    (a: { start: number; end: number }, b: { start: number; end: number }) => {
+      if (a.start == b.start) {
+        return b.end - a.end;
+      }
+      return a.start - b.start;
+    }
+  );
+
+  let uniqueWatchTime: number = 0;
+
+  segmentFlooredArray.map((item: { start: number; end: number }) => {
+    if (end === -1) {
+      uniqueWatchTime += item.end - item.start;
+      end = item.end;
+    } else {
+      if (item.start > end) {
+        uniqueWatchTime += item.end - item.start;
+        end = item.end;
+      } else {
+        uniqueWatchTime += Math.max(0, item.end - end);
+        end = Math.max(end, item.end);
       }
     }
-    previousAudioModeRef.current = "no";
+  });
+
+  return uniqueWatchTime;
+};
 
 ```
 
