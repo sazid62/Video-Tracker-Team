@@ -1,145 +1,116 @@
-# 🎥 Video Component
+# 🎥 Video Analytics
 
-A customizable and feature-rich video player component using [`@vidstack/react`](https://www.vidstack.io/). This component supports various functionalities like heatmaps, tab-switch pause, playback tracking, and volume/subtitle restoration.
-
----
-
-## 🚀 Example Usage
-
-```jsx
-import Video from "./components/vid_player/Video";
-
-function App() {
-  return (
-    <Video
-      video_id={15}
-      video_src="https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
-      watchIntervalTime={5}
-      seekForward={false}
-      onTabChange={{ videoPause: true }}
-      heatMap={{
-        show: true,
-        color: "#8884d8",
-        height: 48,
-        className: "custom-style",
-        strokeColor: "#8884d8",
-        gradientId: "colorUv",
-      }}
-      uniqueTimeWatch={true}
-      volumeRestore={true}
-      subtitleRestore={true}
-    />
-  );
-}
-```
+> Advanced video player analytics with features like heatmaps, seek control, resume capabilities, and full VidStack integration.
 
 ---
 
-## 🧩 Props Documentation
+## 🧩 Overview
 
-### `video_id` (optional)
-- **Type:** `number`
-- **Default:** `12`
-- Unique identifier for the video session.
+**Video Analytics** is a feature-rich React-based video component powered by **VidStack** that enables developers to deeply track and analyze user behavior during video playback.
 
----
-
-### `video_src` (required)
-- **Type:** `string`
-- Video file or streaming playlist (e.g., HLS `.m3u8`).
+This project is ideal for platforms that need insights into how users interact with videos—such as e-learning, OTT, or media-heavy applications.
 
 ---
 
-### `watchIntervalTime` (optional)
-- **Type:** `number`
-- **Default:** `30`
-- Time interval (in seconds) for logging watch progress or analytics.
+## 🚀 Features
+
+| Feature                        | Description                                                                                                                                           | Status     |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| 🔥 Heatmap                    | Displays view heatmap per segment. Color-coded versions supported. Toggle ON/OFF via props.                                                          | ✅ Done     |
+| ▶️ Resume Capabilities        | Resumes video from the last watched position.                                                                                                         | ✅ Done     |
+| ⏱️ Unique Watch Time          | Tracks total unique time watched per user.                                                                                                            | ✅ Done     |
+| 🕒 Total Watch Time           | Aggregates total watch time across sessions.                                                                                                          | ⏳ In Progress |
+| ⏮️ Seek Control              | Prevents forward seeking. Rewind allowed. Configurable via props.                                                                                     | ✅ Done     |
+| 🪟 Tab Visibility Control     | Pauses or continues video on tab switch. Fully configurable.                                                                                          | ✅ Done     |
+| 📶 Network & Buffer Handling  | Sends real-time network/buffering data to backend.                                                                                                    | ✅ Done     |
+| 🖥️ Watch Time by Mode        | Logs time spent in normal, fullscreen, and PiP modes.                                                                                                 | ✅ Done     |
+| 🖱️ Keyboard & Mouse Events   | Captures user inputs like key presses and mouse movements.                                                                                            | ✅ Done     |
+| 🔊 Volume Tracking            | Stores and restores volume per segment.                                                                                                               | ✅ Done     |
+| 📝 Subtitle Segment Analysis  | Analyzes subtitle segments and phrase usage (no resume supported).                                                                                    | ✅ Done     |
+| 🌐 Subtitle Toggle & Language | Tracks subtitle ON/OFF and selected language.                                                                                                         | ✅ Done     |
+| 🎧 Multi-Audio Support        | Logs start/end times of each audio track.                                                                                                             | ✅ Done     |
+| ⏩ Playback Speed Resume      | Resumes video with previously selected speed.                                                                                                         | ✅ Done     |
+| 💡 VidStack Integration       | Fully integrated with the powerful VidStack framework.                                                                                                | ✅ Done     |
+| 🧍 Page Stay Duration         | Measures how long users stay on the video page (active/idle).                                                                                          | ✅ Done     |
+| 📺 Quality Persistence        | Remembers selected video quality (480p, 720p, 1080p) across sessions.                                                                                 | ✅ Done     |
+| ⚙️ Feature Toggles            | All major features are toggleable by developer props or UI (WIP).                                                                                      | ⏳ In Progress |
 
 ---
 
-### `onTabChange` (optional)
-- **Type:** `{ videoPause: boolean }`
-- **Default:** `{ videoPause: false }`
-- If `videoPause` is `true`, the video pauses when the tab/window loses focus.
+## 📦 Tech Stack
+
+- **Framework**: React + Vite
+- **Player SDK**: [VidStack](https://vidstack.io/)
+- **Charts**: Recharts
+- **UI Libraries**: Radix UI, Lucide Icons
+- **Styling**: Tailwind CSS, tailwind-merge
+- **Video Streaming**: HLS.js
 
 ---
 
-### `seekForward` (optional)
-- **Type:** `boolean`
-- **Default:** `false`
-- Set to `false` to prevent users from skipping ahead.
+## ⚙️ Installation
 
----
-
-### `heatMap` (optional)
-Customize the heatmap that shows watched segments of the video.
-
-#### Example:
-```jsx
-heatMap={{
-  show: true,
-  color: "#8884d8",
-  height: 48,
-  className: "custom-style",
-  strokeColor: "#8884d8",
-  gradientId: "colorUv",
-}}
-```
-
-#### Properties:
-| Property       | Type             | Default          | Description                                |
-|----------------|------------------|------------------|--------------------------------------------|
-| `show`         | `boolean`        | `true`           | Enable/disable the heatmap bar             |
-| `color`        | `string`         | `"red"`          | Fill color of segments                     |
-| `height`       | `number|string`  | `100`            | Height of the heatmap bar                  |
-| `className`    | `string`         | `"rounded-lg shadow"` | Additional class styling              |
-| `strokeColor`  | `string`         | `"darkred"`      | Outline color for segments                 |
-| `gradientId`   | `string`         | `undefined`      | SVG gradient ID                            |
-
----
-
-### `uniqueTimeWatch` (optional)
-- **Type:** `boolean`
-- **Default:** `false`
-- If `true`, only unique watched times are counted (no duplication).
-
----
-
-### `volumeRestore` (optional)
-- **Type:** `boolean`
-- **Default:** `false`
-- Remembers and restores the last volume level on reload.
-
----
-
-### `subtitleRestore` (optional)
-- **Type:** `boolean`
-- **Default:** `false`
-- Remembers and restores the last selected subtitle language.
-
----
-
-## 📦 Installation
-
-Install dependencies:
 ```bash
-npm install @vidstack/react
-```
+# Clone the repo
+git clone https://github.com/your-org/video-analytics.git
+cd video-analytics
 
-Make sure you include the default styles:
-```jsx
-import "@vidstack/react/player/styles/default/theme.css";
-import "@vidstack/react/player/styles/default/layouts/video.css";
-```
+# Install dependencies
+npm install
 
----
+# Start dev server
+npm run dev
+🧑‍💻 How to Use the Components
+🔹 Video Component
+Import the Video component:
 
-## 🛠 Development Note
+tsx
+Copy
+Edit
+import { Video } from './components/Video';
+Basic usage:
 
-This player is designed with flexibility and reusability in mind. All features are **optional and toggled via props**, making integration easy and declarative.
+tsx
+Copy
+Edit
+<Video
+  src="/assets/sample-video.m3u8"
+  heatMap={true}
+  tabPause={true}
+  blockSeek={true}
+/>
+Props:
+Prop	Type	Default	Description
+heatMap	boolean	false	Enables the heatmap view on the timeline.
+tabPause	boolean	false	Video will pause when tab is inactive.
+blockSeek	boolean	false	Prevents users from skipping ahead unless they’ve already watched it.
 
----
+✅ All features are configurable, allowing full control over the video analytics experience.
 
-## 📄 License
+📊 Heatmap Usage
+If you want to enable the Heatmap feature, simply pass the heatMap prop:
 
-MIT
+tsx
+Copy
+Edit
+<Video heatMap={true} />
+The heatmap colors reflect intensity of engagement across video segments.
+
+🌐 Deployment
+If deployed, add your live demo URL here.
+
+🧪 Quality & Linting
+ESLint configured
+
+React hooks linting
+
+Tailwind animations via tw-animate-css
+
+🖼️ Demo Screenshots
+Add screenshots or screen recordings here if available.
+
+🧠 Credits
+👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause, Page Time, Playback Resume
+
+👨‍💻 Rabby – Volume, Subtitles, Keyboard/Mouse, Multi-Audio, VidStack Setup
+
