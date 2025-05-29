@@ -1,10 +1,6 @@
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import {
-  useMediaRemote,
-  useMediaStore,
-  type VideoQuality,
-} from "@vidstack/react";
+import { useMediaRemote, type VideoQuality } from "@vidstack/react";
 import {
   MediaPlayer,
   MediaPlayerInstance,
@@ -248,9 +244,11 @@ function Video({
       myInfo.current.lastVolume = lastVolume.current;
       myInfo.current.isMuted = muteStatus.current;
     }
-    lastWatched.current = getCurrentTime() + 1;
-    startWatched.current = getCurrentTime() + 1;
     seekStatus.current = "noseeked";
+
+    lastWatched.current = getCurrentTime();
+    startWatched.current = getCurrentTime();
+
     setDataToLocalStorageFromAddSegment();
   };
 
@@ -278,9 +276,10 @@ function Video({
     allWatcherArray.map((item: { start: number; end: number }) => {
       item.start = Math.floor(item.start);
       item.end = Math.floor(item.end);
-
-      freqArray[item.start] += 1;
-      freqArray[item.end + 1] += -1;
+      if (item.start < item.end) {
+        freqArray[item.start + 1] += 1;
+        freqArray[item.end + 1] += -1;
+      }
     });
 
     for (let i = 1; i < freqArray.length; i++) {
@@ -296,7 +295,7 @@ function Video({
     console.log("Video played at time:", getCurrentTime());
     console.log("My current Playing sound is", videoRef.current?.volume);
     startWatched.current =
-      startWatched.current !== 0 ? getCurrentTime() + 1 : getCurrentTime();
+      startWatched.current !== 0 ? getCurrentTime() : getCurrentTime();
     lastWatched.current = getCurrentTime();
     if (volumeRestore === true) {
       lastVolume.current = videoRef.current?.volume as number;
@@ -354,8 +353,8 @@ function Video({
     blockSeekingForward();
     console.log("Seeked to time:", getCurrentTime());
     console.log("CTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
-    startWatched.current = getCurrentTime() + 1;
-    lastWatched.current = getCurrentTime() + 1;
+    startWatched.current = getCurrentTime();
+    lastWatched.current = getCurrentTime();
   };
 
   const handleEnded = () => {
