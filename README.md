@@ -55,7 +55,7 @@ npm run dev
 
 ## 🚀 Example Usage
 
-```
+```bash
 import Video from "./components/vid_player/Video";
 
 function App() {
@@ -106,6 +106,169 @@ function App() {
 | `strokeColor` | `string` | `"darkred"` | Outline color |
 | `gradientId` | `string` | `undefined` | Custom SVG gradient ID |
 
+## Heatmap :
+
+First Create Component Heatmap.tsx
+
+```bash
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
+
+interface HeatmapProps {
+  pv: number[];
+  show?: boolean;
+  color?: string;
+  height?: number | string;
+  className?: string;
+  strokeColor?: string;
+  gradientId?: string;
+}
+
+export default function Heatmap({
+  pv,
+  show = true,
+  color = "#8884d8",
+  height = 48,
+  className = "",
+  strokeColor = "#8884d8",
+  gradientId = "colorUv",
+}: HeatmapProps) {
+  if (!show) return null;
+
+  const data = pv.map((val, i) => ({ name: i, views: val }));
+
+  return (
+    <div
+      className={` ${className}`}
+      style={{ height: typeof height === "number" ? `${height}px` : height }}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={data}
+          margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+              <stop offset="95%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="views"
+            stroke={strokeColor}
+            fillOpacity={1}
+            fill={`url(#${gradientId})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+```
+
+Now In your Component
+
+```bash
+import React, { useState, useRef } from "react";
+import Heatmap from "./Heatmap";
+
+
+interface WatchSegment {
+  start: number;
+  end: number;
+}
+
+export default function VideoWithHeatmap() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const [heatMapData, setHeatMapData] = useState<number[]>([]);
+
+  // Example watch data (replace with your actual logic)
+  const allWatcherSegments: WatchSegment[] = [
+    { start: 1, end: 3 },
+    { start: 2, end: 4 },
+    // ... more segments
+  ];
+
+  const generateHeatmap = (): number[] => {
+    const videoDuration = Math.floor(videoRef.current?.duration || 0);
+    const freqArray = new Array(videoDuration + 1).fill(0);
+
+    console.log("[Heatmap] Generating heatmap for video duration:", videoDuration);
+
+    allWatcherSegments.forEach(({ start, end }) => {
+      const s = Math.floor(start);
+      const e = Math.floor(end);
+      if (s < e) {
+        freqArray[s + 1] += 1;
+        freqArray[e + 1] -= 1;
+        console.log(`[Heatmap] Segment: ${s + 1} to ${e} => +1 at ${s + 1}, -1 at ${e + 1}`);
+      }
+    });
+
+    for (let i = 1; i < freqArray.length; i++) {
+      freqArray[i] += freqArray[i - 1];
+    }
+    freqArray.pop(); // remove the last extra element
+
+    console.log("[Heatmap] Final Frequency Array:", freqArray);
+    return freqArray;
+  };
+
+  const handleLoadedData = () => {
+    console.log("[MediaPlayer] Video data loaded");
+    const heatmap = generateHeatmap();
+    setHeatMapData(heatmap);
+  };
+
+  return (
+    <>
+      <MediaPlayer ref={videoRef} onLoadedData={handleLoadedData} />
+      <Heatmap pv={heatMapData} />
+    </>
+  );
+}
+
+
+```
+
+## Add Segment Function: Instantly Store Current Watch Segment of user to LoaclHost
+
+```bash
+const addSegment = () => {
+    if (startWatched.current >= lastWatched.current) {
+      return; //Skip Invalid segment Like {start: 12s , end: 5s}
+    }
+
+
+    myInfo.current = {
+      ...myInfo.current,
+      array: [
+        ...myInfo.current.array,
+        {
+          start: startWatched.current,
+          end: lastWatched.current,
+          screen_mode: screen_mode.current,
+          current_volume: lastVolume.current,
+          isMuted: muteStatus.current,
+          seekByMouseOrKey: seekStatus.current,
+          subtitleLanguage: previousSubtitleModeRef.current,
+          playBackSpeed: playBackSpeed.current,
+          videoQuality: video_Quality.current,
+          selectedAudio: previousAudioModeRef.current,
+        },
+      ],
+    };
+
+   //New Segment Start
+    lastWatched.current = getCurrentTime();
+    startWatched.current = getCurrentTime();
+
+    setDataToLocalStorageFromAddSegment(); //Instantly send data to backend / LocalStorage
+  };
+
+```
+
 ## User Start with last watched time
 
 For this work i saved the last watch time in local storage for now(lastWatchedTime).
@@ -120,11 +283,100 @@ const handleLoadedData=()=>{
 <MediaPlayer onLoadedData={handleLoadedData}></MediaPlayer>;
 ```
 
+## Resume Video Quality from Last Watched
+
+```bash
+const selectLastVideoQuality = () => {
+  const player = videoRef.current;
+  const qualitiesArray = player?.qualities?.toArray();
+
+  const lastQuality = qualitiesArray?.find(
+    (q) => q.height === myInfo.current.lastVideoQuality
+  );
+
+  if (lastQuality) {
+    lastQuality.selected = true;
+    console.log(`[Quality] Resuming last watched quality: ${lastQuality.height}p`);
+  } else {
+    console.warn("[Quality] Last watched video quality not found");
+  }
+};
+
+const handleLoadedData = () => {
+  console.log("[Player] Video loaded. Selecting last watched quality...");
+  selectLastVideoQuality();
+};
+
+const handleQualityChange = (quality: VideoQuality | null) => {
+  if (quality) {
+    video_Quality.current = quality.height;
+    console.log(`[Quality] Changed to: ${quality.height}p`);
+  }
+};
+
+// Usage in component
+<MediaPlayer
+  onQualityChange={handleQualityChange}
+  onLoadedData={handleLoadedData}
+/>
+
+```
+
+## Watcher Active Time on Page
+
+```bash
+const activeTimeIntervalRef = useRef<NodeJS.Timeout>();
+const [pageStayTime, setPageStayTime] = useState(0);
+
+const startCountingPageStayTime = () => {
+  if (activeTimeIntervalRef.current)
+    clearInterval(activeTimeIntervalRef.current);
+
+  activeTimeIntervalRef.current = setInterval(() => {
+    activeTimeOnPageRef.current += 1;
+    setPageStayTime(activeTimeOnPageRef.current);
+    localStorage.setItem("stayTime", activeTimeOnPageRef.current.toString());
+    console.log(`[Page Stay] Active time on page: ${activeTimeOnPageRef.current}s`);
+  }, 1000);
+};
+
+  const handleLoadedData = () => {
+    console.log("[Player] Video data loaded. Starting active time counter...");
+    startCountingPageStayTime();
+  };
+
+
+useEffect(() => {
+
+  const handleFocus = () => {
+    console.log("[Window] Focus regained. Resuming active time counter...");
+    startCountingPageStayTime();
+  };
+
+  const handleBlur = () => {
+    console.log("[Window] Focus lost. Pausing active time counter...");
+    clearInterval(activeTimeIntervalRef.current);
+  };
+
+  window.addEventListener("focus", handleFocus);
+  window.addEventListener("blur", handleBlur);
+
+
+  return () => {
+    window.removeEventListener("focus", handleFocus);
+    window.removeEventListener("blur", handleBlur);
+  };
+}, []);
+
+<MediaPlayer onLoadedData={handleLoadedData} />
+
+```
+
 ## subtitle change detect and retrive last subtitle enabled in a video
 
 onTextTrackChange is called when subtitle changed.
 
-```
+```bash
 const textTrackRef = useRef("first");
 const handleTextTrackChange = () => {
   if (textTrackRef.current === "first" && subtitleRestore) {

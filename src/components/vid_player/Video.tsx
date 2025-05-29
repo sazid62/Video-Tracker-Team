@@ -332,7 +332,7 @@ function Video({
     if (
       isPlaying.current &&
       getCurrentTime() > lastWatched.current &&
-      lastWatched.current - startWatched.current >= 1
+      lastWatched.current - startWatched.current >= 0
     ) {
       if (seekStatus.current === "noseeked") {
         seekStatus.current = "mouse";
@@ -542,8 +542,6 @@ function Video({
           console.log(onTabChange);
           if (onTabChange.pause) videoRef?.current.pause();
         }
-      } else {
-        startCountingPageStayTime();
       }
     };
     const handleBuffering = () => {
@@ -562,9 +560,6 @@ function Video({
         console.log("Key-pressed");
         console.log("seekStatus test", seekStatus.current);
       }
-    };
-    const handleLoadedData = () => {
-      startCountingPageStayTime();
     };
 
     const handleFocus = () => {
@@ -586,7 +581,7 @@ function Video({
     videoRef?.current?.addEventListener("stalled", handleNetworkError);
 
     window.onbeforeunload = handleBeforeUnload;
-    window.onload = handleLoadedData;
+
     return () => {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
