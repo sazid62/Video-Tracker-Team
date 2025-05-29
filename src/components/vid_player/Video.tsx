@@ -150,18 +150,16 @@ function Video({
 
     segmentFlooredArray.map((item: { start: number; end: number }) => {
       if (end === -1) {
-        if (item.start === 0) {
-          uniqueWatchTime--;
-        }
-        uniqueWatchTime += item.end - item.start + 1;
-        end = item.end + 1;
+        
+        uniqueWatchTime += item.end - item.start;
+        end = item.end;
       } else {
         if (item.start > end) {
-          uniqueWatchTime += item.end - item.start + 1;
-          end = item.end + 1;
+          uniqueWatchTime += item.end - item.start;
+          end = item.end ;
         } else {
-          uniqueWatchTime += Math.max(0, item.end - end + 1);
-          end = Math.max(end, item.end + 1);
+          uniqueWatchTime += Math.max(0, item.end - end);
+          end = Math.max(end, item.end);
         }
       }
     });
