@@ -53,7 +53,59 @@ cd Video-Tracker-Team
 npm install
 npm run dev
 
-🧠 Credits
+
+
+
+## 🚀 Example Usage
+import Video from "./components/vid_player/Video";
+
+function App() {
+  return (
+    <Video
+      video_id={15}
+      video_src="https://cdn.bitmovin.com/content/assets/sintel/hls/playlist.m3u8"
+      watchIntervalTime={5}
+      seekForward={false}
+      onTabChange={{ videoPause: true }}
+      heatMap={{
+        show: true,
+        color: "#8884d8",
+        height: 48,
+        className: "custom-style",
+        strokeColor: "#8884d8",
+        gradientId: "colorUv",
+      }}
+      uniqueTimeWatch={true}
+      volumeRestore={true}
+      subtitleRestore={true}
+    />
+  );
+}
+## 🧩 Props Documentation of video component
+| Prop                | Type                      | Default     | Description                                         |
+| ------------------- | ------------------------- | ----------- | --------------------------------------------------- |
+| `video_id`          | `number`                  | `12`        | Unique identifier for the video session             |
+| `video_src`         | `string` (required)       | —           | URL to the video file (supports `.m3u8`, MP4, etc.) |
+| `watchIntervalTime` | `number`                  | `30`        | Interval in seconds to send watch data to backend   |
+| `onTabChange`       | `{ videoPause: boolean }` | `{ false }` | Pause video when tab loses focus                    |
+| `seekForward`       | `boolean`                 | `false`     | Prevent skipping ahead unless already watched       |
+| `heatMap`           | `object`                  | See below   | Display heatmap of watched video segments           |
+| `uniqueTimeWatch`   | `boolean`                 | `false`     | Count only unique watch times (exclude overlaps)    |
+| `volumeRestore`     | `boolean`                 | `false`     | Restore previous volume setting on resume           |
+| `subtitleRestore`   | `boolean`                 | `false`     | Restore last used subtitle language                 |
+
+🔥 HeatMap Props
+| Property      | Type               | Default               | Description               |
+| ------------- | ------------------ | --------------------- | ------------------------- |
+| `show`        | `boolean`          | `true`                | Toggle heatmap visibility |
+| `color`       | `string`           | `"red"`               | Fill color for segments   |
+| `height`      | `number \| string` | `100`                 | Height of the heatmap bar |
+| `className`   | `string`           | `"rounded-lg shadow"` | Custom CSS classes        |
+| `strokeColor` | `string`           | `"darkred"`           | Outline color             |
+| `gradientId`  | `string`           | `undefined`           | Custom SVG gradient ID    |
+
+
+##🧠 Credits
 👨‍💻 Sajid – Heatmap, Seek Control, Quality Persistence, Tab Pause, Page Time, Playback Resume
 
 👨‍💻 Rabby – Volume, Subtitles, Keyboard/Mouse, Multi-Audio, VidStack Setup
