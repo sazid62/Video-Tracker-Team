@@ -40,7 +40,7 @@ interface videoProps {
   //added by rabby
   uniqueTimeWatch: boolean;
   volumeRestore: boolean;
-  subtitleRestore:boolean;
+  subtitleRestore: boolean;
 }
 
 interface Segment {
@@ -83,7 +83,7 @@ function Video({
   },
   uniqueTimeWatch = false,
   volumeRestore = false,
-  subtitleRestore=false,
+  subtitleRestore = false,
 }: videoProps) {
   const videoRef = useRef<MediaPlayerInstance>(null);
   // const videoRef = useRef<HTMLVideoElement>(null);
@@ -237,7 +237,7 @@ function Video({
     };
 
     console.log("Adding Segment: ", myInfo.current);
-    if(subtitleRestore===true){
+    if (subtitleRestore === true) {
       myInfo.current.lastSubtitle = previousSubtitleModeRef.current;
     }
     myInfo.current.lastWatchedTime =
@@ -605,7 +605,7 @@ function Video({
     if (isPlaying.current) {
       addSegment();
     }
-    if(volumeRestore===true){
+    if (volumeRestore === true) {
       lastVolume.current = videoRef.current?.volume as number;
       muteStatus.current = videoRef.current?.muted as boolean;
     }
@@ -644,7 +644,6 @@ function Video({
   // }
   const textTrackRef = useRef("first");
   const handleTextTrackChange = () => {
-    
     if (textTrackRef.current === "first" && subtitleRestore) {
       const textTracks = videoRef?.current?.textTracks || [];
       for (let i = 0; i < textTracks?.length; i++) {
