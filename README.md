@@ -271,12 +271,12 @@ const addSegment = () => {
 
 ## User Start with last watched time
 
-For this work i saved the last watch time in local storage for now(lastWatchedTime).
+For this work I saved the last watch time in local storage for now(lastWatchedTime).
 
 When user back in this video and video component render and video is loaded to (onLoadedData event).
 I set player.currentTime=lastWatchedTime.
-```
-const handleLoadedData=()=>{
+```bash
+const handleLoadedData = () => {
   videoRef.current.currentTime = myInfo.current.lastWatchedTime;
 }
 
