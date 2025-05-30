@@ -1,7 +1,10 @@
-
 import type { myInfoType } from "@/components/vid_player/Video";
+import type { MediaPlayerInstance } from "@vidstack/react";
 import type { RefObject } from "react";
-export const setDataToLocalStorageFromAddSegment = (myInfo:RefObject<myInfoType>,video_id:number) => {
+export const setDataToLocalStorageFromAddSegment = (
+  myInfo: RefObject<myInfoType>,
+  video_id: number
+) => {
   const previousPushedData = JSON.parse(
     localStorage.getItem("video-editor") || "[]"
   );
@@ -21,51 +24,66 @@ export const setDataToLocalStorageFromAddSegment = (myInfo:RefObject<myInfoType>
   }
 
   localStorage.setItem("video-editor", JSON.stringify(previousPushedData));
-  };
+};
 
-
-  export const getUniqueWatchTime = (uniqueTimeWatch:boolean,myInfo:RefObject<myInfoType>) => {
-    if (uniqueTimeWatch === false) {
-      return -1;
+export const getUniqueWatchTime = (
+  uniqueTimeWatch: boolean,
+  myInfo: RefObject<myInfoType>
+) => {
+  if (uniqueTimeWatch === false) {
+    return -1;
+  }
+  let end: number = -1;
+  const segmentFlooredArray = myInfo?.current?.array.map(
+    (item: { start: number; end: number }) => {
+      return {
+        start: Math.floor(item.start),
+        end: Math.floor(item.end),
+      };
     }
-    let end: number = -1;
-    const segmentFlooredArray = myInfo?.current?.array.map(
-      (item: { start: number; end: number }) => {
-        return {
-          start: Math.floor(item.start),
-          end: Math.floor(item.end),
-        };
+  );
+  segmentFlooredArray?.sort(
+    (a: { start: number; end: number }, b: { start: number; end: number }) => {
+      if (a.start == b.start) {
+        return b.end - a.end;
       }
-    );
-    segmentFlooredArray?.sort(
-      (
-        a: { start: number; end: number },
-        b: { start: number; end: number }
-      ) => {
-        if (a.start == b.start) {
-          return b.end - a.end;
-        }
-        return a.start - b.start;
-      }
-    );
+      return a.start - b.start;
+    }
+  );
 
-    let uniqueWatchTime: number = 0;
+  let uniqueWatchTime: number = 0;
 
-    segmentFlooredArray?.map((item: { start: number; end: number }) => {
-      if (end === -1) {
-        
+  segmentFlooredArray?.map((item: { start: number; end: number }) => {
+    if (end === -1) {
+      uniqueWatchTime += item.end - item.start;
+      end = item.end;
+    } else {
+      if (item.start > end) {
         uniqueWatchTime += item.end - item.start;
         end = item.end;
       } else {
-        if (item.start > end) {
-          uniqueWatchTime += item.end - item.start;
-          end = item.end ;
-        } else {
-          uniqueWatchTime += Math.max(0, item.end - end);
-          end = Math.max(end, item.end);
-        }
+        uniqueWatchTime += Math.max(0, item.end - end);
+        end = Math.max(end, item.end);
       }
-    });
+    }
+  });
 
-    return uniqueWatchTime;
-  };
+  return uniqueWatchTime;
+};
+
+export const ResumeLastTimeandAudio = (
+  videoRef: RefObject<MediaPlayerInstance | null>,
+  myInfo: RefObject<myInfoType>,
+  previousAudioModeRef: RefObject<string>
+) => {
+  if (videoRef?.current && myInfo.current) {
+    videoRef.current.currentTime = myInfo.current.lastWatchedTime;
+
+    const audioTracks = videoRef.current.state.audioTracks;
+    for (let i = 0; i < audioTracks.length; i++) {
+      if (audioTracks[i].selected === true) {
+        previousAudioModeRef.current = audioTracks[i].language;
+      }
+    }
+  }
+};
