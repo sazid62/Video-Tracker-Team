@@ -14,6 +14,7 @@ import React, { useRef, useEffect, useState } from "react";
 import Heatmap from "../Heatmap";
 
 import TimeSliderComponent from "./TimeSliderComponent";
+import { getUniqueWatchTime,setDataToLocalStorageFromAddSegment } from "@/modules/utils/VideoComponent";
 
 interface HeatmapProps {
   show?: boolean;
@@ -51,7 +52,7 @@ interface Segment {
   videoQuality: number;
   selectedAudio: string;
 }
-interface myInfoType {
+export interface myInfoType {
   array: Segment[];
   video_id: number;
   lastWatchedTime: number;
@@ -121,73 +122,7 @@ function Video({
   const myInfo = useRef<myInfoType>(myInfoInitialize());
   const startWatched = useRef(myInfo.current.lastWatchedTime);
 
-  const getUniqueWatchTime = () => {
-    if (uniqueTimeWatch === false) {
-      return -1;
-    }
-    let end: number = -1;
-    const segmentFlooredArray = myInfo.current.array.map(
-      (item: { start: number; end: number }) => {
-        return {
-          start: Math.floor(item.start),
-          end: Math.floor(item.end),
-        };
-      }
-    );
-    segmentFlooredArray.sort(
-      (
-        a: { start: number; end: number },
-        b: { start: number; end: number }
-      ) => {
-        if (a.start == b.start) {
-          return b.end - a.end;
-        }
-        return a.start - b.start;
-      }
-    );
-
-    let uniqueWatchTime: number = 0;
-
-    segmentFlooredArray.map((item: { start: number; end: number }) => {
-      if (end === -1) {
-        
-        uniqueWatchTime += item.end - item.start;
-        end = item.end;
-      } else {
-        if (item.start > end) {
-          uniqueWatchTime += item.end - item.start;
-          end = item.end ;
-        } else {
-          uniqueWatchTime += Math.max(0, item.end - end);
-          end = Math.max(end, item.end);
-        }
-      }
-    });
-
-    return uniqueWatchTime;
-  };
-
-  const setDataToLocalStorageFromAddSegment = () => {
-    const previousPushedData = JSON.parse(
-      localStorage.getItem("video-editor") || "[]"
-    );
-
-    const index = previousPushedData.findIndex(
-      (item: {
-        video_id: number;
-        array: [];
-        lastWatchedTime: number;
-        lastSubtitle: string;
-      }) => item.video_id === video_id
-    );
-    if (index !== -1) {
-      previousPushedData[index] = myInfo.current;
-    } else {
-      previousPushedData.push(myInfo.current);
-    }
-
-    localStorage.setItem("video-editor", JSON.stringify(previousPushedData));
-  };
+  
 
   const addSegment = () => {
     if (startWatched.current >= lastWatched.current) {
@@ -247,7 +182,7 @@ function Video({
     lastWatched.current = getCurrentTime();
     startWatched.current = getCurrentTime();
 
-    setDataToLocalStorageFromAddSegment();
+    setDataToLocalStorageFromAddSegment(myInfo,video_id);
   };
 
   const getCurrentTime = (): number => {
@@ -364,43 +299,7 @@ function Video({
   const handleTimeUpdate = () => {
     // console.log(screen_mode.current);
 
-    if (videoRef.current) {
-      // const tracks = videoRef.current.state.textTracks;
-      // for (let i = 0; i < tracks.length; i++) {
-      //   const track = tracks[i];
-      //   const prevMode = previousSubtitleModeRef.current[track.label];
-      //   if (prevMode !== track.mode) {
-      //     // addSegment();
-      //     console.log(
-      //       `Track ${track.label} changed from ${prevMode} to ${track.mode}`
-      //     );
-      //     previousSubtitleModeRef.current[track.label] = track.mode;
-      //     // Log active subtitle
-      //     const activeTrack = Array.from(tracks).find(
-      //       (t) => t.mode === "showing"
-      //     );
-      //     if (activeTrack) {
-      //       subtitleRef.current = activeTrack.language;
-      //       console.log(`Active subtitle: ${activeTrack.label}`);
-      //     } else {
-      //       subtitleRef.current = "no";
-      //       console.log("No subtitles active");
-      //     }
-      //   }
-      // }
-      // const audioTracks=videoRef.current.state.audioTracks;
-      // const prevMode=previousAudioModeRef.current;
-      // for(let i=0;i<audioTracks.length;i++){
-      //   const audiotrack=audioTracks[i];
-      //   if(audiotrack.selected===true){
-      //     if(prevMode!==audiotrack.language){
-      //       addSegment();
-      //       previousAudioModeRef.current=audiotrack.language;
-      //       // audioRef.current=audiotrack.language;
-      //     }
-      //   }
-      // }
-    }
+    
 
     if (!videoRef.current?.state.seeking) {
       // console.log("Updating");
@@ -540,7 +439,7 @@ function Video({
       if (document.visibilityState === "hidden") {
         if (videoRef?.current) {
           console.log(onTabChange);
-          if (onTabChange.pause) videoRef?.current.pause();
+          if (onTabChange.videoPause) videoRef?.current.pause();
         }
       }
     };
@@ -747,7 +646,7 @@ function Video({
       <div className="flex flex-col items-start gap-4">
         {uniqueTimeWatch && (
           <div className="text-green-600 text-xl font-semibold">
-            {getUniqueWatchTime()} seconds unique viewed
+            {getUniqueWatchTime(uniqueTimeWatch,myInfo)} seconds unique viewed
           </div>
         )}
         <div className=" text-red-600 text-xl font-semibold">
