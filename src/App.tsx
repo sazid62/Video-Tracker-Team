@@ -9,6 +9,15 @@ function App() {
 
     "480p": "video/v1.mp4",
   };
+  const show=true;
+  const heatmapProps=show?{
+    show: true,
+    color: "#8884d8",
+    height: 50,
+    className: "",
+    strokeColor: "#8884d8",
+    gradientId: "colorUv",
+  }:{show:false}
   return (
     <>
       {/* <Video
@@ -29,14 +38,7 @@ function App() {
         onTabChange={{
           videoPause: true,
         }}
-        heatMap={{
-          show: true,
-          color: "#8884d8",
-          height: 50,
-          className: "",
-          strokeColor: "#8884d8",
-          gradientId: "colorUv",
-        }}
+        heatMap={heatmapProps}
         uniqueTimeWatch={true}
         volumeRestore={true}
         subtitleRestore={true}
